@@ -216,7 +216,7 @@ void opening_detection()
 	lightSensorValue = analogRead(lightSensorPin); 
 	//Serial.print("light value is: ");
 	//Serial.println(lightSensorValue);
-	return;
+	//return;
 
 	if (lightSensorValue > LIGHT_THR){
 			dbg_print_P(PSTR("Light THR exceded!\n"));

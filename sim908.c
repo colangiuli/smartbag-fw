@@ -1023,7 +1023,7 @@ void SIM908_send_pos_2_cloud()
 void SIM908_send_open_2_cloud()
 {
     char msg_txt[100];
-    sprintf_P(msg_txt,PSTR("{\"imei\": \"013043001522278\",\"opening\": [[\"20%d-%d-%d %d:%d:%d\"]]}"), year, month, day, hour, minute, second); 
+    sprintf_P(msg_txt,PSTR("{\"imei\": \"013043001522278\",\"opening\": [\"20%d-%d-%d %d:%d:%d\"]}"), year, month, day, hour, minute, second); 
     SIM908_cloud_send(msg_txt);
 }
 
@@ -1034,7 +1034,7 @@ void SIM908_send_open_2_cloud()
 void SIM908_send_move_2_cloud()
 {
     char msg_txt[100];
-    sprintf_P(msg_txt,PSTR("{\"imei\": \"013043001522278\",\"move\": [[\"20%d-%d-%d %d:%d:%d\"]]}"), year, month, day, hour, minute, second); 
+    sprintf_P(msg_txt,PSTR("{\"imei\": \"013043001522278\",\"move\": [\"20%d-%d-%d %d:%d:%d\"]}"), year, month, day, hour, minute, second); 
     SIM908_cloud_send(msg_txt);
 }
 
@@ -1045,7 +1045,8 @@ void SIM908_send_move_2_cloud()
 void SIM908_send_impact_2_cloud()
 {
     char msg_txt[100];
-    sprintf_P(msg_txt,PSTR("{\"imei\": \"013043001522278\",\"impact\": [[\"20%d-%d-%d %d:%d:%d\", \"%ld\", \"%ld\", \"%ld\"]]}"), year, month, day, hour, minute, second, lis_x, lis_y, lis_z); 
+	Serial.println(lis_z);
+    sprintf_P(msg_txt,PSTR("{\"imei\": \"013043001522278\",\"handling\": [[%d, \"20%d-%d-%d %d:%d:%d\"]]}"), lis_z, year, month, day, hour, minute, second); 
     SIM908_cloud_send(msg_txt);
 }
 
