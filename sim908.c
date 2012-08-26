@@ -7,13 +7,23 @@
 
 //TODO
 /*
-	implementare il parsing dei pacchetti ricevuti da GPRS
+	migliorare la gestione della data,(usare l'RTC)
+		-scrivere parsing della stringa +CCLK
+		-spostare SIM908_set_RTC_date
+		-leggere l'RTC ogni x secondi
+		-magari si potrebbe ricevere la data esatta dall'iphone o meglio ancora da internet...
+		-bisogna calcolare il tempo trascorso dall'ultimo aggiornamento e aggiornare la data di conseguenza prima di inviarla negli alert
+        -gestire la posizione tramite celle
+            -fare parsing di CENG
+            -richiedere posizione con AT+CENG?
+	
+	inviare i dati della batt tramite BT
+	
 	convertire strstr in strstr_P
 	gestire la ricezione dell'ok o dell'eventuale error (se non ricevo ne uno ne l'altro probabilmente il modulo e' spento)	
 	migliorare poweron / poweroff del modulo gsm
 	migliorare la init tenendo conto che non c'e' piu l'autobaud.
-	completare l'acquisizione del serial number (imei) in fase di init.
-	migliorare la gestione della data,(usare l'RTC)
+	implementare il parsing dei pacchetti ricevuti da GPRS
 */
 
 SC16IS7X0 mySerial;
@@ -42,7 +52,7 @@ int8_t  BATT_level = 100;
 uint8_t waiting_response = FALSE;
 uint8_t waiting_connection = FALSE;
 uint8_t waiting_prompt = FALSE;
-
+char IMEI[20];
 unsigned long startTime;
 
 ////////////////////////////////////////////////////////////////////////////
@@ -52,6 +62,7 @@ unsigned long startTime;
 void SIM908_init(){
   int cont=0;
   int count;
+  int8_t result;
   char read_buffer[100];
 
     pinMode(pwrPin, OUTPUT);
@@ -133,12 +144,16 @@ void SIM908_init(){
      count = SIM908_send_at_P(PSTR("AT+CGPSOUT=0\r"));      
      sim908_read_and_parse(SHORT_TOUT);
      //
-     count = SIM908_send_at_P(PSTR("AT+CNETLIGHT=1\r"));      
+     count = SIM908_send_at_P(PSTR("AT+CNETLIGHT=0\r"));      
      sim908_read_and_parse(SHORT_TOUT);
      
      //save current settings
 	 count = SIM908_send_at_P(PSTR("AT&W\r"));
 	 sim908_read_and_parse(SHORT_TOUT);
+     
+	 //read current RTC date
+	 count = SIM908_send_at_P(PSTR("AT+CCLK?\r"));
+	 sim908_read_and_parse(SHORT_TOUT);     
      
      startTime = millis();
      //SIM908_go_to_sleep();
@@ -147,13 +162,16 @@ void SIM908_init(){
      //get serial number
      //AT+CGSN
      count = SIM908_send_at_P(PSTR("AT+CGSN\r"));
+     sim908_read_line(read_buffer, 100, SHORT_TOUT);
+     result = sim908_read_line(read_buffer, 100, SHORT_TOUT);
+     //now response will contain the IMEI
+     if (result >= 0){
+        strncpy(IMEI,read_buffer,19);
+        IMEI[14] = 0;
+        //Serial.print("imei is: ");
+        //Serial.println(IMEI);
+     }
 	 sim908_read_and_parse(SHORT_TOUT);
-
-     //012896000229044
-
-     //OK
-     
-     //code here...
      
 }
 
@@ -372,6 +390,13 @@ int8_t sim908_read_and_parse(uint16_t tout_ms)
 			continue;
 		}			
 		
+		//RTC DATE RECEIVED?	
+		p_char = strstr_P(response, PSTR("+CCLK"));
+		if ( p_char != NULL){		
+			SIM908_parse_RTC_date(response);
+			continue;
+		}		
+		
 		//MODULE SHUTDOWN RECEIVED?	
 		p_char = strstr_P(response, PSTR("NORMAL POWER DOWN"));
 		if ( p_char != NULL){	
@@ -390,6 +415,9 @@ int8_t sim908_read_and_parse(uint16_t tout_ms)
 		p_char = strstr_P(response, PSTR("32,")); //THIS MUST BE IMPROVED IN ORDER TO BE SURE THAT "0," ARE THE FIRST TWO CHARs OF THE STRING
 		if ( p_char != NULL){		
 			SIM908_GPS_get_position(response);
+//questo non deve restare qui!!!!! non posso essere sicuro che abbia gia mandato l'ok del precedente comando!!!!
+			if (fix_status == FIX_VALID)
+                SIM908_set_RTC_date();
 			continue;
 		}
 
@@ -1043,7 +1071,7 @@ void SIM908_send_pos_2_cloud()
 {
     //{"imei": "013043001522278","position": ["2012-04-14 12:20:30", "dddddddd", "ddddddddd", "SSS"]}
     char position_txt[100];
-    sprintf_P(position_txt,PSTR("{\"imei\": \"013043001522278\",\"position\": [[\"20%d-%d-%d %d:%d:%d\", \"%ld\", \"%ld\", \"%u\"]]}"), year, month, day, hour, minute, second, latitude, longitude, groundspeed); 
+    sprintf_P(position_txt,PSTR("{\"imei\": \"%s\",\"position\": [[\"20%d-%d-%d %d:%d:%d\", \"%ld\", \"%ld\", \"%u\"]]}"),IMEI, year, month, day, hour, minute, second, latitude, longitude, groundspeed); 
     SIM908_cloud_send(position_txt);
 }
 
@@ -1054,7 +1082,7 @@ void SIM908_send_pos_2_cloud()
 void SIM908_send_open_2_cloud()
 {
     char msg_txt[100];
-    sprintf_P(msg_txt,PSTR("{\"imei\": \"013043001522278\",\"opening\": [\"20%d-%d-%d %d:%d:%d\"]}"), year, month, day, hour, minute, second); 
+    sprintf_P(msg_txt,PSTR("{\"imei\": \"%s\",\"opening\": [\"20%d-%d-%d %d:%d:%d\"]}"),IMEI, year, month, day, hour, minute, second); 
     SIM908_cloud_send(msg_txt);
 }
 
@@ -1065,7 +1093,7 @@ void SIM908_send_open_2_cloud()
 void SIM908_send_move_2_cloud()
 {
     char msg_txt[100];
-    sprintf_P(msg_txt,PSTR("{\"imei\": \"013043001522278\",\"move\": [\"20%d-%d-%d %d:%d:%d\"]}"), year, month, day, hour, minute, second); 
+    sprintf_P(msg_txt,PSTR("{\"imei\": \"%s\",\"move\": [\"20%d-%d-%d %d:%d:%d\"]}"),IMEI, year, month, day, hour, minute, second); 
     SIM908_cloud_send(msg_txt);
 }
 
@@ -1083,7 +1111,7 @@ void SIM908_send_impact_2_cloud()
 	if (lis_z > max_impact)
 		max_impact = lis_z;
 	
-    sprintf_P(msg_txt,PSTR("{\"imei\": \"013043001522278\",\"handling\": [[%d, \"20%d-%d-%d %d:%d:%d\"]]}"), max_impact, year, month, day, hour, minute, second); 
+    sprintf_P(msg_txt,PSTR("{\"imei\": \"%s\",\"handling\": [[%d, \"20%d-%d-%d %d:%d:%d\"]]}"),IMEI, max_impact, year, month, day, hour, minute, second); 
     SIM908_cloud_send(msg_txt);
 }
 
@@ -1166,5 +1194,27 @@ void SIM908_send_pos_2_sms(char *number)
     sprintf_P(position_txt,PSTR("http://maps.google.it/maps?q=%s,%s"),lat_txt, long_txt);
     
     SIM908_send_sms(position_txt, number);
+}
+
+////////////////////////////////////////////////////////////////////////////
+////         	              SIM908_parse_RTC_date                     ////
+////////////////////////////////////////////////////////////////////////////
+
+void SIM908_parse_RTC_date(char *message)
+{
+    //+CCLK: "10/10/12,02:57:38+00"
+    
+}
+
+////////////////////////////////////////////////////////////////////////////
+////         	              SIM908_set_RTC_date                       ////
+////////////////////////////////////////////////////////////////////////////
+void SIM908_set_RTC_date()
+{
+    char tmpCMD[35];
+    
+    sprintf_P(tmpCMD,PSTR("AT+CCLK=\"%02d/%02d/%02d,%02d:%02d:%02d+00\"\r"),year, month, day, hour, minute, second);
+    SIM908_send_at((char*)tmpCMD);
+    sim908_read_and_parse(SHORT_TOUT);
 }
 

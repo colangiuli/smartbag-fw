@@ -74,5 +74,6 @@ void SIM908_send_impact_2_cloud();
 void SIM908_send_gprs_data();
 
 void SIM908_send_pos_2_sms(char *number);
-
+void SIM908_set_RTC_date();
+void SIM908_parse_RTC_date(char *message);
 #endif

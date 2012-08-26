@@ -53,6 +53,12 @@ LIS3DH lis;
 void setup();
 void loop();
 
+//TODO
+/*
+	in futuro bisogna gestire correttamente gli interrupt dei due convertitore seriale I2C
+	leggere l'op mode tramite BT o comunque gestire se l'iphone mi cambia l'OP mode
+*/
+
 void setup()
 {
 	char tmpStr[120];
