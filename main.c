@@ -28,6 +28,7 @@
 #define ACCEL_THRESHOLD_IMPACT 1000
 
 #define LIGHT_THR 100
+#define LIGHT_DEBOUNCE_MS 60000
 
 int16_t lis_x;
 int16_t lis_y;
@@ -37,6 +38,7 @@ int16_t lis_z;
 int lightSensorPin = A0;    
 int lightSensorValue = 0; 
 
+unsigned long light_debounce_start = 0;
 
 uint8_t move_enabled = FALSE;
 
@@ -75,8 +77,7 @@ void setup()
 //	delay(1000);
 	SIM908_GPS_power(ON);
 
-  	Serial.println("\n[BG API Demo]");
-  	dbg_print_P(PSTR("Initializing Bluegiga ...\n"));
+  	dbg_print_P(PSTR("Init BG ...\n"));
   	BG_sapi_init();
   	delay(3000);
 
@@ -87,6 +88,10 @@ void setup()
     
 	uint16_t handle = 3;
 	char attribute[64];
+
+	//now we need to read the operating mode
+	//code here...
+	dbg_print_P(PSTR("READ OP MODE\n"));
 /*
 	char attr_write[64] = "MyHe";
 	dbg_print_P(PSTR("write attr\n"));
@@ -105,7 +110,7 @@ void setup()
     sprintf(tmpStr, "Attr read!! len: %d Attr: %s\n", attribute[0], ++attribute_ptr);
     Serial.println(tmpStr);
 */
-    Serial.println("ENTERING MAIN LOOP ... ");
+    dbg_print_P(PSTR("MAIN LOOP\n"));
 }
 
 void ble_task()
@@ -218,8 +223,9 @@ void opening_detection()
 	//Serial.println(lightSensorValue);
 	//return;
 
-	if (lightSensorValue > LIGHT_THR){
+	if ((lightSensorValue > LIGHT_THR) && (millis() - light_debounce_start > LIGHT_DEBOUNCE_MS)) {
 			dbg_print_P(PSTR("Light THR exceded!\n"));
+			light_debounce_start = millis();
 			if ( is_connection_established() == 1 )
 			{
 				dbg_print_P(PSTR("BT SEND ---->\n"));

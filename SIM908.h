@@ -50,7 +50,7 @@ void SIM908_go_to_sleep(void);
 void SIM908_wakeup(void);
 int SIM908_send_at(char *command);
 int SIM908_send_at_P(const char *command);
-int8_t sim908_read_and_parse();
+int8_t sim908_read_and_parse(uint16_t tout_ms);
 void parseCommand(char *cmd);
 void SIM908_parse_battery_status(char *batt_status);
 void SIM908_handle_gprs_data(char *response);

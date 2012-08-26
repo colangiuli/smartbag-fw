@@ -12,6 +12,8 @@
 	gestire la ricezione dell'ok o dell'eventuale error (se non ricevo ne uno ne l'altro probabilmente il modulo e' spento)	
 	migliorare poweron / poweroff del modulo gsm
 	migliorare la init tenendo conto che non c'e' piu l'autobaud.
+	completare l'acquisizione del serial number (imei) in fase di init.
+	migliorare la gestione della data,(usare l'RTC)
 */
 
 SC16IS7X0 mySerial;
@@ -38,6 +40,8 @@ uint8_t PWR_status = OFF;
 uint8_t BATT_charging_status = NOT_CHARGING;
 int8_t  BATT_level = 100;
 uint8_t waiting_response = FALSE;
+uint8_t waiting_connection = FALSE;
+uint8_t waiting_prompt = FALSE;
 
 unsigned long startTime;
 
@@ -59,7 +63,7 @@ void SIM908_init(){
 	mySerial.begin(4800, 0x48);        
 	
 	//first check if there is any pending data in the buffer
-	sim908_read_and_parse(); //maybe it is better to flush anything
+	sim908_read_and_parse(SHORT_TOUT); //maybe it is better to flush anything
   
 	for (cont=0; cont<5; cont++){
 		count = SIM908_send_at_P(PSTR("AT\r"));
@@ -71,7 +75,7 @@ void SIM908_init(){
       		dbg_print_P(PSTR("NO RESP"));
 #endif
 			SIM908_power(ON);
-			sim908_read_and_parse();
+			sim908_read_and_parse(SHORT_TOUT);
     	}
     	else{
       		//module is powered ON
@@ -87,58 +91,70 @@ void SIM908_init(){
 	
 	 //enable hw flow control
 	 count = SIM908_send_at_P(PSTR("AT+IFC=2,2\r"));
-     sim908_read_and_parse();
+     sim908_read_and_parse(SHORT_TOUT);
 	 //disable autobaud
 	 count = SIM908_send_at_P(PSTR("AT+IPR=4800\r"));
-	 sim908_read_and_parse();
+	 sim908_read_and_parse(SHORT_TOUT);
 	 //disable command echo
 	 count = SIM908_send_at_P(PSTR("ATE0\r"));
-	 sim908_read_and_parse();
+	 sim908_read_and_parse(SHORT_TOUT);
 	 //enable caller id notification
 	 count = SIM908_send_at_P(PSTR("AT+CLIP=1\r"));
-	 sim908_read_and_parse();
+	 sim908_read_and_parse(SHORT_TOUT);
 	 // 
 	 count = SIM908_send_at_P(PSTR("AT+CENG=1\r"));
-	 sim908_read_and_parse();
+	 sim908_read_and_parse(SHORT_TOUT);
 	 //
 	 count = SIM908_send_at_P(PSTR("AT+CSMP=17,167,0,241\r"));
-	 sim908_read_and_parse();
+	 sim908_read_and_parse(SHORT_TOUT);
 	 //
 	 count = SIM908_send_at_P(PSTR("AT+CLVL=90\r"));
-	 sim908_read_and_parse();
+	 sim908_read_and_parse(SHORT_TOUT);
 	 //
 	 count = SIM908_send_at_P(PSTR("AT+CMGF=1\r"));
-	 sim908_read_and_parse();
+	 sim908_read_and_parse(SHORT_TOUT);
 	 //
 	 count = SIM908_send_at_P(PSTR("AT+CNMI=2,1,0,0,0\r"));
-	 sim908_read_and_parse();
+	 sim908_read_and_parse(SHORT_TOUT);
 	 //
 	 count = SIM908_send_at_P(PSTR("AT+CREG=0\r"));
-	 sim908_read_and_parse();
+	 sim908_read_and_parse(SHORT_TOUT);
 	 //
 	 count = SIM908_send_at_P(PSTR("AT+CSCS=\"IRA\"\r"));
-	 sim908_read_and_parse();
+	 sim908_read_and_parse(SHORT_TOUT);
 	 //slow clock (sleep mode)
 	 //0-disable 1-controlled by dtr 2-when there is no data on serial, module can enter sleep mode
 	 count = SIM908_send_at_P(PSTR("AT+CSCLK=0\r"));
-	 sim908_read_and_parse();
+	 sim908_read_and_parse(SHORT_TOUT);
  	 //
      count = SIM908_send_at_P(PSTR("AT+CGMR\r"));      
-     sim908_read_and_parse();
+     sim908_read_and_parse(SHORT_TOUT);
      //
      count = SIM908_send_at_P(PSTR("AT+CGPSOUT=0\r"));      
-     sim908_read_and_parse();
+     sim908_read_and_parse(SHORT_TOUT);
      //
      count = SIM908_send_at_P(PSTR("AT+CNETLIGHT=1\r"));      
-     sim908_read_and_parse();
+     sim908_read_and_parse(SHORT_TOUT);
      
      //save current settings
 	 count = SIM908_send_at_P(PSTR("AT&W\r"));
-	 sim908_read_and_parse();
+	 sim908_read_and_parse(SHORT_TOUT);
      
      startTime = millis();
      //SIM908_go_to_sleep();
      //delay(10000);
+     
+     //get serial number
+     //AT+CGSN
+     count = SIM908_send_at_P(PSTR("AT+CGSN\r"));
+	 sim908_read_and_parse(SHORT_TOUT);
+
+     //012896000229044
+
+     //OK
+     
+     //code here...
+     
 }
 
 
@@ -153,7 +169,7 @@ void SIM908_task(void)
     
 	//first check if there is any pending data in the buffer
 	if (mySerial.available())
-	    sim908_read_and_parse();
+	    sim908_read_and_parse(SHORT_TOUT);
 	
 	//there is an incoming call?
 	if (incoming_call == TRUE)
@@ -161,7 +177,7 @@ void SIM908_task(void)
 		//hangup
 		SIM908_send_at_P(PSTR("ATH\r"));
 	 	//read response (we have to wait for the OK)
-		sim908_read_and_parse();
+		sim908_read_and_parse(SHORT_TOUT);
 		//in future we have to check that we have received OK before setting to FALSE
 		incoming_call = FALSE;
 		sbi(data_2_send,POSITION);
@@ -180,14 +196,14 @@ void SIM908_task(void)
 				sprintf_P(cmd,PSTR("AT+CMGR=%d\r"), idx);
 				SIM908_send_at(cmd);
 			 	//read response (we have to wait for the OK)
-				sim908_read_and_parse();
+				sim908_read_and_parse(SHORT_TOUT);
 				cbi(sms_2_read,idx);
 			}//end if CHECKBIT
 		}//end for
 		//remove all the already read sms from memory
 		SIM908_send_at_P(PSTR("AT+CMGD=1,3\r"));
 	 	//read response (we have to wait for the OK)
-		sim908_read_and_parse();
+		sim908_read_and_parse(SHORT_TOUT);
 	}//end if sms_2_read
 
 	//there is any sms to send?
@@ -211,7 +227,7 @@ void SIM908_task(void)
 	{	
 		SIM908_send_at_P(PSTR("AT+CGPSINF=32\r"));
  		//read response (we have to wait for the OK)
-		sim908_read_and_parse();
+		sim908_read_and_parse(SHORT_TOUT);
 		//SIM908_send_pos_2_sms("3311590142");
         task_2_execute = TASK_UPDATE_BATT;
 		startTime = millis();
@@ -223,7 +239,7 @@ void SIM908_task(void)
 	{
 		SIM908_send_at_P(PSTR("AT+CBC\r"));
  		//read response (we have to wait for the OK)
-		sim908_read_and_parse();
+		sim908_read_and_parse(SHORT_TOUT);
 		task_2_execute = TASK_UPDATE_GPS;
 		startTime = millis();
 		return;
@@ -234,7 +250,7 @@ void SIM908_task(void)
 	//{	
 	//	SIM908_send_at_P(PSTR("AT+CGPSSTATUS?\r"));
  		//read response (we have to wait for the OK)
-	//	sim908_read_and_parse();
+	//	sim908_read_and_parse(SHORT_TOUT);
 	//}	
     //SIM908_go_to_sleep();		
 }
@@ -245,9 +261,9 @@ void SIM908_task(void)
 void SIM908_go_to_sleep(void)
 {
      SIM908_send_at_P(PSTR("AT+CSCLK=1\r"));
-	 sim908_read_and_parse();
+	 sim908_read_and_parse(SHORT_TOUT);
 	 SIM908_send_at_P(PSTR("AT+CNETLIGHT=0\r"));      
-     sim908_read_and_parse();
+     sim908_read_and_parse(SHORT_TOUT);
      digitalWrite(wakeupPin,HIGH);
 }
 
@@ -259,7 +275,7 @@ void SIM908_wakeup(void)
      digitalWrite(wakeupPin,LOW);
      delay(100);    
      SIM908_send_at_P(PSTR("AT+CSCLK=0\r"));
-	 sim908_read_and_parse();
+	 sim908_read_and_parse(SHORT_TOUT);
 }
 
 ////////////////////////////////////////////////////////////////////////////
@@ -297,7 +313,7 @@ int SIM908_send_at_P(const char *command)
 ////         	              sim908_read_and_parse                     ////
 ////////////////////////////////////////////////////////////////////////////
 
-int8_t sim908_read_and_parse()
+int8_t sim908_read_and_parse(uint16_t tout_ms)
 {
 	char response[200];
 	int8_t result, smsIdx;
@@ -305,7 +321,7 @@ int8_t sim908_read_and_parse()
 
 	
 	do{
-		result = sim908_read_line(response, 200, SHORT_TOUT);
+		result = sim908_read_line(response, 200, tout_ms);
 		
 		//SMS TEXT RECEIVED?
 		p_char = strstr_P(response, PSTR("+CMGR"));
@@ -376,6 +392,16 @@ int8_t sim908_read_and_parse()
 			SIM908_GPS_get_position(response);
 			continue;
 		}
+
+		//CONNECT OK RECEIVED?	
+		p_char = strstr_P(response, PSTR("CONNECT OK")); 
+		if ( p_char != NULL){
+		    if (waiting_connection == TRUE){ 		
+                waiting_connection = FALSE;
+                waiting_response = FALSE;
+			    return SUCCESS;
+		    }
+		}
 		
 		//OK RECEIVED?	
 		p_char = strstr_P(response, PSTR("OK")); 
@@ -385,6 +411,17 @@ int8_t sim908_read_and_parse()
 			    return SUCCESS;
 		    }
 		}
+		
+		//PROMPT RECEIVED?	
+		p_char = strstr_P(response, PSTR(">")); 
+		if ( p_char != NULL){
+		    if (waiting_prompt == TRUE){ 		
+                waiting_prompt = FALSE;
+                waiting_response = FALSE;
+			    return SUCCESS;
+		    }
+		}
+		
 		//ERROR RECEIVED?	
 		p_char = strstr_P(response, PSTR("ERROR")); 
 		if ( p_char != NULL){		
@@ -589,7 +626,7 @@ void SIM908_send_data_2_sms()
 		{
             SIM908_send_sms_P(PSTR("MOVING!!"), PSTR("3311590142"));
 		 	//read response (we have to wait for the OK)
-			sim908_read_and_parse();
+			sim908_read_and_parse(SHORT_TOUT);
 			cbi(sms_2_send,MOVE_ALARM);
 		}//end if CHECKBIT
 		
@@ -597,7 +634,7 @@ void SIM908_send_data_2_sms()
 		{
             SIM908_send_sms_P(PSTR("OPEN!!"), PSTR("3311590142"));
 		 	//read response (we have to wait for the OK)
-			sim908_read_and_parse();
+			sim908_read_and_parse(SHORT_TOUT);
 			cbi(sms_2_send,OPEN_ALARM);
 		}//end if CHECKBIT
 		
@@ -605,7 +642,7 @@ void SIM908_send_data_2_sms()
 		{
             SIM908_send_pos_2_sms("3311590142");
 		 	//read response (we have to wait for the OK)
-			sim908_read_and_parse();
+			sim908_read_and_parse(SHORT_TOUT);
 			cbi(sms_2_send,POSITION);
 		}//end if CHECKBIT
 }
@@ -631,7 +668,7 @@ void SIM908_power(uint8_t state)
 	if ((state == OFF) && (PWR_status == ON))
 	{
 		SIM908_send_at_P(PSTR("AT+CPOWD=0\r"));
-		sim908_read_and_parse(); //we will receive NORMAL POWER DOWN
+		sim908_read_and_parse(SHORT_TOUT); //we will receive NORMAL POWER DOWN
 	}
 
 }
@@ -650,12 +687,12 @@ void SIM908_GPS_power(uint8_t state)
 		SIM908_send_at_P(PSTR("AT+CGPSPWR=0\r"));
 	}
 	
-	sim908_read_and_parse();
+	sim908_read_and_parse(SHORT_TOUT);
 	
 	if (state == ON)
 	{
 		SIM908_send_at_P(PSTR("AT+CGPSRST=1\r"));
-		sim908_read_and_parse();
+		sim908_read_and_parse(SHORT_TOUT);
 	}
 }
 
@@ -933,54 +970,48 @@ void SIM908_cloud_send(const char* message){
 
 	  char messageSize[4];
 	  char end_c[2];
+	  unsigned int count = 0; 
+
 	  end_c[0]=0x1a;
 	  end_c[1]='\0';
-	  //char tmpBuf[270];
-//	unsigned long start_time;
 	
-	//  char *cleaned_buffer;
-	  unsigned int count = 0; 
-//	  char c;
-      
       //add header to packages received
 	  count = SIM908_send_at_P(PSTR("AT+CIPHEAD=1\r"));
-	  sim908_read_and_parse();
+	  sim908_read_and_parse(SHORT_TOUT);
       count = SIM908_send_at_P(PSTR("AT+CIPSHUT\r"));
-	  sim908_read_and_parse();
+	  sim908_read_and_parse(SHORT_TOUT);
 	  if (waiting_response == TRUE)
-	    sim908_read_and_parse();
+	    sim908_read_and_parse(SHORT_TOUT);
 	  //set APN            
-	  count = SIM908_send_at_P(PSTR("AT+CSTT=\"ibox.tim.it\", \"\",\"\"\r")); //this command can answer ok or error
-	  delay(2000);
-	  sim908_read_and_parse();
+	  count = SIM908_send_at_P(PSTR("AT+CIPCSGP=1,\"ibox.tim.it\"\r")); //this command can answer ok or error
+	  sim908_read_and_parse(SHORT_TOUT);
 	  if (waiting_response == TRUE)
-	    sim908_read_and_parse();
-	  count = SIM908_send_at_P(PSTR("AT+CIICR\r"));
-	  delay(2000);
-	  sim908_read_and_parse();
-	  if (waiting_response == TRUE){
-          delay(3000);
-	      sim908_read_and_parse();
-	  }
-	  count = SIM908_send_at_P(PSTR("AT+CIFSR\r")); //this command answer with the ip address or error
-	  delay(2000);
-	  sim908_read_and_parse();
-	  if (waiting_response == TRUE){
-          delay(2000);
-	      sim908_read_and_parse();
-	  }
+	    sim908_read_and_parse(SHORT_TOUT);
 
 	  count = SIM908_send_at_P(PSTR("AT+CIPSTART=\"TCP\",\"www.blue-chain.com\", 80\r"));
-	  delay(2000);
-	  sim908_read_and_parse();
-	  if (waiting_response == TRUE){
-          delay(2000);
-	      sim908_read_and_parse();
+	  //delay(2000);
+
+      waiting_connection = TRUE;
+	  sim908_read_and_parse(10000);
+
+	  if ((waiting_response == TRUE) || (waiting_connection == TRUE)) {
+          //delay(2000);
+	      sim908_read_and_parse(10000);
 	  }
 	         
 	  count = SIM908_send_at_P(PSTR("AT+CIPSEND\r"));
-	  delay(2000);
-	  sim908_read_and_parse();
+	  //delay(2000);
+      waiting_prompt = TRUE;
+	  sim908_read_and_parse(500);
+  	  if (waiting_prompt == TRUE) {
+          //delay(2000);
+	      sim908_read_and_parse(2000);
+	  }    
+	  
+	  if ((waiting_response == TRUE) || (waiting_connection == TRUE) || (waiting_prompt == TRUE) ) {
+          //something bad happened...
+          return;
+	  }
       
 
 	  count = SIM908_send_at_P(PSTR("POST /DataCollector.php HTTP/1.0\r\n"));
@@ -996,10 +1027,10 @@ void SIM908_cloud_send(const char* message){
 	  count = SIM908_send_at((char*)message);
 	  count = SIM908_send_at_P(PSTR("\n\n\n"));
       mySerial.writeBytes((unsigned char *)end_c,  1);
-	  sim908_read_and_parse();
+	  sim908_read_and_parse(SHORT_TOUT);
 	  if (waiting_response == TRUE){
           delay(500);
-	      sim908_read_and_parse();
+	      sim908_read_and_parse(SHORT_TOUT);
 	  }
 }
 
@@ -1045,8 +1076,14 @@ void SIM908_send_move_2_cloud()
 void SIM908_send_impact_2_cloud()
 {
     char msg_txt[100];
-	Serial.println(lis_z);
-    sprintf_P(msg_txt,PSTR("{\"imei\": \"013043001522278\",\"handling\": [[%d, \"20%d-%d-%d %d:%d:%d\"]]}"), lis_z, year, month, day, hour, minute, second); 
+	int16_t max_impact = lis_x;
+
+	if (lis_y > max_impact)
+		max_impact = lis_y;
+	if (lis_z > max_impact)
+		max_impact = lis_z;
+	
+    sprintf_P(msg_txt,PSTR("{\"imei\": \"013043001522278\",\"handling\": [[%d, \"20%d-%d-%d %d:%d:%d\"]]}"), max_impact, year, month, day, hour, minute, second); 
     SIM908_cloud_send(msg_txt);
 }
 
@@ -1130,3 +1167,4 @@ void SIM908_send_pos_2_sms(char *number)
     
     SIM908_send_sms(position_txt, number);
 }
+
