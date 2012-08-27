@@ -33,11 +33,13 @@
 #define FIX_VALID 1
 #define FIX_NOT_VALID 0
 
-#define TASK_INTERVAL 30000
+#define TASK_INTERVAL 15000
 
 #define TASK_UPDATE_GPS 0
 #define TASK_UPDATE_BATT 1
 #define TASK_SEND_GPRS_POSITION 2
+#define TASK_UPDATE_TIME 3
+#define TASK_UPDATE_CELL_DATA 4
 
 //bit manipulation macros
 #define CHECKBIT(ADDRESS,BIT) (ADDRESS & (1<<BIT))
@@ -71,9 +73,11 @@ void SIM908_send_pos_2_cloud();
 void SIM908_send_open_2_cloud();
 void SIM908_send_move_2_cloud();
 void SIM908_send_impact_2_cloud();
+void SIM908_send_cell_data_2_cloud();
 void SIM908_send_gprs_data();
 
 void SIM908_send_pos_2_sms(char *number);
 void SIM908_set_RTC_date();
 void SIM908_parse_RTC_date(char *message);
+void SIM908_parse_gsm_cell_data(char *message);
 #endif

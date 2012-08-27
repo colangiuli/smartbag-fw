@@ -8,14 +8,11 @@
 //TODO
 /*
 	migliorare la gestione della data,(usare l'RTC)
-		-scrivere parsing della stringa +CCLK
-		-spostare SIM908_set_RTC_date
-		-leggere l'RTC ogni x secondi
 		-magari si potrebbe ricevere la data esatta dall'iphone o meglio ancora da internet...
 		-bisogna calcolare il tempo trascorso dall'ultimo aggiornamento e aggiornare la data di conseguenza prima di inviarla negli alert
-        -gestire la posizione tramite celle
-            -fare parsing di CENG
-            -richiedere posizione con AT+CENG?
+        
+    -gestire la posizione tramite celle
+		-inviare i dati delle celle tramite GPRS
 	
 	inviare i dati della batt tramite BT
 	
@@ -35,6 +32,8 @@ extern	int16_t lis_z;
 uint8_t hour, minute, second, year, month, day;
 int32_t latitude, longitude;
 uint8_t groundspeed, trackangle, fix_status;
+uint16_t cellid[7], mcc[7], mnc[7], lac[7]; 
+uint8_t rxl[7];
 
 uint8_t pwrPin = 7;
 uint8_t wakeupPin = 6;
@@ -52,8 +51,10 @@ int8_t  BATT_level = 100;
 uint8_t waiting_response = FALSE;
 uint8_t waiting_connection = FALSE;
 uint8_t waiting_prompt = FALSE;
+
 char IMEI[20];
 unsigned long startTime;
+unsigned long rtcAcquisitionTime;
 
 ////////////////////////////////////////////////////////////////////////////
 ////         	              SIM908_init                               ////
@@ -113,7 +114,7 @@ void SIM908_init(){
 	 count = SIM908_send_at_P(PSTR("AT+CLIP=1\r"));
 	 sim908_read_and_parse(SHORT_TOUT);
 	 // 
-	 count = SIM908_send_at_P(PSTR("AT+CENG=1\r"));
+	 count = SIM908_send_at_P(PSTR("AT+CENG=1,1\r"));
 	 sim908_read_and_parse(SHORT_TOUT);
 	 //
 	 count = SIM908_send_at_P(PSTR("AT+CSMP=17,167,0,241\r"));
@@ -146,14 +147,12 @@ void SIM908_init(){
      //
      count = SIM908_send_at_P(PSTR("AT+CNETLIGHT=0\r"));      
      sim908_read_and_parse(SHORT_TOUT);
-     
      //save current settings
 	 count = SIM908_send_at_P(PSTR("AT&W\r"));
 	 sim908_read_and_parse(SHORT_TOUT);
-     
 	 //read current RTC date
 	 count = SIM908_send_at_P(PSTR("AT+CCLK?\r"));
-	 sim908_read_and_parse(SHORT_TOUT);     
+	 sim908_read_and_parse(SHORT_TOUT);       
      
      startTime = millis();
      //SIM908_go_to_sleep();
@@ -247,15 +246,41 @@ void SIM908_task(void)
  		//read response (we have to wait for the OK)
 		sim908_read_and_parse(SHORT_TOUT);
 		//SIM908_send_pos_2_sms("3311590142");
-        task_2_execute = TASK_UPDATE_BATT;
+        task_2_execute = TASK_UPDATE_CELL_DATA;
 		startTime = millis();
 		return;
     }
+    
+    if (fix_status == FIX_VALID)
+        SIM908_set_RTC_date();    
+	
+	//we need to update the gsm cell position?
+	if (task_2_execute == TASK_UPDATE_CELL_DATA)
+	{
+		SIM908_send_at_P(PSTR("AT+CENG?\r"));
+ 		//read response (we have to wait for the OK)
+		sim908_read_and_parse(SHORT_TOUT);
+		task_2_execute = TASK_UPDATE_BATT;
+		startTime = millis();
+		return;
+	}
+	
 	
 	//we need to check battery status?
 	if (task_2_execute == TASK_UPDATE_BATT)
 	{
 		SIM908_send_at_P(PSTR("AT+CBC\r"));
+ 		//read response (we have to wait for the OK)
+		sim908_read_and_parse(SHORT_TOUT);
+		task_2_execute = TASK_UPDATE_TIME;
+		startTime = millis();
+		return;
+	}
+	
+	//we need to check battery status?
+	if (task_2_execute == TASK_UPDATE_TIME)
+	{
+		SIM908_send_at_P(PSTR("AT+CCLK?\r"));
  		//read response (we have to wait for the OK)
 		sim908_read_and_parse(SHORT_TOUT);
 		task_2_execute = TASK_UPDATE_GPS;
@@ -397,6 +422,15 @@ int8_t sim908_read_and_parse(uint16_t tout_ms)
 			continue;
 		}		
 		
+		//GSM CELL DATA RECEIVED?	
+		p_char = strstr_P(response, PSTR("+CENG"));
+		if ( p_char != NULL){		
+		    p_char = strstr_P(response, PSTR("+CENG: 1,1"));
+		    if ( p_char == NULL)	
+			    SIM908_parse_gsm_cell_data(response);
+			continue;
+		}
+		
 		//MODULE SHUTDOWN RECEIVED?	
 		p_char = strstr_P(response, PSTR("NORMAL POWER DOWN"));
 		if ( p_char != NULL){	
@@ -416,8 +450,6 @@ int8_t sim908_read_and_parse(uint16_t tout_ms)
 		if ( p_char != NULL){		
 			SIM908_GPS_get_position(response);
 //questo non deve restare qui!!!!! non posso essere sicuro che abbia gia mandato l'ok del precedente comando!!!!
-			if (fix_status == FIX_VALID)
-                SIM908_set_RTC_date();
 			continue;
 		}
 
@@ -949,6 +981,9 @@ void SIM908_GPS_get_position(char *gps_string)
     day = tmp / 10000;
     month = (tmp / 100) % 100;
     year = tmp % 100;
+    
+    //this is used to calculate the drift from the time of acquisition
+    rtcAcquisitionTime = millis();
 	
 }
 
@@ -1115,6 +1150,33 @@ void SIM908_send_impact_2_cloud()
     SIM908_cloud_send(msg_txt);
 }
 
+////////////////////////////////////////////////////////////////////////////
+////         	              SIM908_send_cell_data_2_cloud             ////
+////////////////////////////////////////////////////////////////////////////
+
+void SIM908_send_cell_data_2_cloud()
+{
+    char msg_txt[370];
+	int16_t max_impact = lis_x;
+
+	if (lis_y > max_impact)
+		max_impact = lis_y;
+	if (lis_z > max_impact)
+		max_impact = lis_z;
+	
+    sprintf_P(msg_txt,PSTR("{\"imei\": \"%s\", \"celldata\": [\"tstamp\": \"20%d-%d-%d %d:%d:%d\", \"cells\": [[%u,%u,%u,%u,%u],[%u,%u,%u,%u,%u],[%u,%u,%u,%u,%u],[%u,%u,%u,%u,%u],[%u,%u,%u,%u,%u],[%u,%u,%u,%u,%u],[%u,%u,%u,%u,%u]]]}"),
+    IMEI, year, month, day, hour, minute, second, 
+    cellid[0], mcc[0], mnc[0], lac[0], rxl[0],
+    cellid[1], mcc[1], mnc[1], lac[1], rxl[1],
+    cellid[2], mcc[2], mnc[2], lac[2], rxl[2],
+    cellid[3], mcc[3], mnc[3], lac[3], rxl[3],
+    cellid[4], mcc[4], mnc[4], lac[4], rxl[4],
+    cellid[5], mcc[5], mnc[5], lac[5], rxl[5],
+    cellid[6], mcc[6], mnc[6], lac[6], rxl[6]
+    ); 
+    SIM908_cloud_send(msg_txt);
+}
+
 
 
 
@@ -1146,7 +1208,8 @@ void SIM908_send_gprs_data()
 
 		if(CHECKBIT(data_2_send,IMPACT_ALARM))
 		{
-            SIM908_send_impact_2_cloud();
+            //SIM908_send_impact_2_cloud();
+            SIM908_send_cell_data_2_cloud();
 			cbi(data_2_send,IMPACT_ALARM);
 		}//end if CHECKBIT
 }
@@ -1202,7 +1265,296 @@ void SIM908_send_pos_2_sms(char *number)
 
 void SIM908_parse_RTC_date(char *message)
 {
+    //+CBC: 0,68,3842
     //+CCLK: "10/10/12,02:57:38+00"
+	char *p_start_char, *p_end_char;
+	
+	int8_t tmp_value = 0;
+    //year
+	p_start_char = strstr(message, "+CCLK: ");
+	if ( p_start_char == NULL){
+		return;
+	}
+
+	p_start_char = strchr(message, '"') +1;	
+   	if ( p_start_char == NULL){
+		return;
+	}
+		
+	p_end_char = strchr(p_start_char, '/');
+	if (p_end_char == NULL){
+		return;
+	}
+			
+	*p_end_char = 0; 	   
+	
+	tmp_value = atoi(p_start_char);
+	
+	if ((tmp_value >= 12) && (tmp_value <= 99))
+		year = tmp_value;
+	else
+		return;
+	
+	//month			
+	p_start_char = p_end_char + 1;	
+	p_end_char = strchr(p_start_char, '/');
+	if (p_start_char == NULL) 
+		return;
+		
+	*p_end_char = 0;	
+			
+	tmp_value = atoi(p_start_char);	
+	if ((tmp_value > 0) && (tmp_value <= 12))
+		month = tmp_value;
+	else
+		return;
+		
+ 	//day
+		p_start_char = p_end_char + 1;	
+	p_end_char = strchr(p_start_char, ',');
+	if (p_start_char == NULL) 
+		return;
+		
+	*p_end_char = 0;	
+			
+	tmp_value = atoi(p_start_char);	
+	if ((tmp_value > 0) && (tmp_value <= 31))
+		day = tmp_value;
+	else
+		return;
+
+ 	//hour			
+	p_start_char = p_end_char + 1;	
+	p_end_char = strchr(p_start_char, ':');
+	if (p_start_char == NULL) 
+		return;
+			
+	*p_end_char = 0;	
+			
+	tmp_value = atoi(p_start_char);	
+	if ((tmp_value >= 0) && (tmp_value <= 23))
+		hour = tmp_value;
+	else
+		return;		
+
+ 	//minute		
+	p_start_char = p_end_char + 1;	
+	p_end_char = strchr(p_start_char, ':');
+	if (p_start_char == NULL) 
+		return;
+		
+	*p_end_char = 0;	
+			
+	tmp_value = atoi(p_start_char);	
+	if ((tmp_value >= 0) && (tmp_value <= 60))
+		minute = tmp_value;
+	else
+		return;		
+		
+ 	//second		
+		p_start_char = p_end_char + 1;	
+	p_end_char = strchr(p_start_char, '+');
+	if (p_start_char == NULL) 
+		return;
+		
+	*p_end_char = 0;	
+			
+	tmp_value = atoi(p_start_char);		
+	if ((tmp_value >= 0) && (tmp_value <= 60))
+		second = tmp_value;
+	else
+		return;		
+    //let's save the acquisition time
+    rtcAcquisitionTime = millis(); 
+}
+
+////////////////////////////////////////////////////////////////////////////
+////         	         SIM908_parse_gsm_cell_data                     ////
+////////////////////////////////////////////////////////////////////////////
+void SIM908_parse_gsm_cell_data(char *message)
+{
+//           cell#   arfcn      rxl     rxq     mcc       mcn     bsic      cellid    rla     txp    lac       ta
+//    +CENG:  0,     "0006,     28,     99,     222,      01,      18,      fbc2,      06,    05,    8951,    255"
+
+//           cell#   arfcn      rxl     bsic    cellid    mcc      mcn      lac                     
+//    +CENG:  1,     "0025,     07,     16,     fbc3,     222,     01,      8951"
+    //+CENG:0,"0006,26,99,222,01,18,fbc2,06,05,8951,255"
+    //+CENG:1,"0025,07,16,ffff,000,00,0"
+		char *p_start_char, *p_end_char;
+	
+	int8_t tmp_value = 0;
+    int8_t celln;
+
+    //cell #
+	p_start_char = strstr(message, "+CENG:");
+	if ( p_start_char == NULL)
+		return;
+	p_start_char = strchr(message, ':') +1;	
+   	if ( p_start_char == NULL)
+		return;
+	p_end_char = strchr(p_start_char, ',');
+	if (p_end_char == NULL)
+		return;
+	*p_end_char = 0; 	   
+	tmp_value = atoi(p_start_char);
+	
+	if ((tmp_value >= 0) && (tmp_value <= 6))
+		celln = tmp_value;
+	else
+		return;
+	if (celln == 0){
+	    //arfcn			0006
+        //non serve
+        /////////////////////////////////////////
+        p_start_char = p_end_char + 1;	
+    	p_end_char = strchr(p_start_char, ',');
+    	if (p_start_char == NULL) 
+    		return;
+    		
+        //rxl				10
+        /////////////////////////////////////////
+        p_start_char = p_end_char + 1;	
+    	p_end_char = strchr(p_start_char, ',');
+    	if (p_start_char == NULL) 
+    		return;
+    	*p_end_char = 0;	
+        rxl[celln] = atoi(p_start_char);	
+    		
+        //rxq				99
+        //non serve
+        /////////////////////////////////////////
+        p_start_char = p_end_char + 1;	
+    	p_end_char = strchr(p_start_char, ',');
+    	if (p_start_char == NULL) 
+    		return;
+    		
+        //mcc			222
+        /////////////////////////////////////////
+        p_start_char = p_end_char + 1;	
+    	p_end_char = strchr(p_start_char, ',');
+    	if (p_start_char == NULL) 
+    		return;
+    	*p_end_char = 0;	
+    	mcc[celln] = atol(p_start_char);
+    		      
+        //mnc			01
+        /////////////////////////////////////////
+        p_start_char = p_end_char + 1;	
+    	p_end_char = strchr(p_start_char, ',');
+    	if (p_start_char == NULL) 
+    		return;
+    	*p_end_char = 0;	
+    	mnc[celln] = atol(p_start_char);	
+    	       
+        //bsic			18
+        //non serve
+        /////////////////////////////////////////
+        p_start_char = p_end_char + 1;	
+    	p_end_char = strchr(p_start_char, ',');
+    	if (p_start_char == NULL) 
+    		return;        
+
+        //cellid		fbc2
+        /////////////////////////////////////////
+        p_start_char = p_end_char + 1;	
+    	p_end_char = strchr(p_start_char, ',');
+    	if (p_start_char == NULL) 
+    		return;
+    	*p_end_char = 0;	
+    	cellid[celln] = strtol(p_start_char, &p_end_char, 16);	
+     
+        //rla				06
+        //non serve
+        /////////////////////////////////////////
+        p_start_char = p_end_char + 1;	
+    	p_end_char = strchr(p_start_char, ',');
+    	if (p_start_char == NULL) 
+    		return;        
+    		
+        //txp				05
+        //non serve
+        /////////////////////////////////////////
+        p_start_char = p_end_char + 1;	
+    	p_end_char = strchr(p_start_char, ',');
+    	if (p_start_char == NULL) 
+    		return;
+
+        //lac 		8951
+        /////////////////////////////////////////
+        p_start_char = p_end_char + 1;	
+    	p_end_char = strchr(p_start_char, ',');
+    	if (p_start_char == NULL) 
+    		return;
+    	*p_end_char = 0;	
+    	lac[celln] = atol(p_start_char);	
+
+    		     
+        //ta				255
+	    //servirebbe ma e' nullo
+	    
+	}else
+	    {
+	    //arfcn			0006
+        //non serve
+        /////////////////////////////////////////
+        p_start_char = p_end_char + 1;	
+    	p_end_char = strchr(p_start_char, ',');
+    	if (p_start_char == NULL) 
+    		return;
+    		
+        //rxl				10
+        /////////////////////////////////////////
+        p_start_char = p_end_char + 1;	
+    	p_end_char = strchr(p_start_char, ',');
+    	if (p_start_char == NULL) 
+    		return;
+    	*p_end_char = 0;	
+        rxl[celln] = atoi(p_start_char);	
+    		
+    	//bsic			18
+        //non serve
+        /////////////////////////////////////////
+        p_start_char = p_end_char + 1;	
+    	p_end_char = strchr(p_start_char, ',');
+    	if (p_start_char == NULL) 
+    		return;        
+
+        //cellid		fbc2
+        /////////////////////////////////////////
+        p_start_char = p_end_char + 1;	
+    	p_end_char = strchr(p_start_char, ',');
+    	if (p_start_char == NULL) 
+    		return;
+    	*p_end_char = 0;	
+    	cellid[celln] = strtol(p_start_char, &p_end_char, 16);
+    	
+    	//mcc			222
+        /////////////////////////////////////////
+        p_start_char = p_end_char + 1;	
+    	p_end_char = strchr(p_start_char, ',');
+    	if (p_start_char == NULL) 
+    		return;
+    	*p_end_char = 0;	
+    	mcc[celln] = atol(p_start_char);
+    		      
+        //mnc			01
+        /////////////////////////////////////////
+        p_start_char = p_end_char + 1;	
+    	p_end_char = strchr(p_start_char, ',');
+    	if (p_start_char == NULL) 
+    		return;
+    	*p_end_char = 0;	
+    	mnc[celln] = atol(p_start_char);
+    	
+    	//lac 		8951
+        /////////////////////////////////////////
+        p_start_char = p_end_char + 1;	
+    	p_end_char = strchr(p_start_char, ',');
+    	if (p_start_char == NULL) 
+    		return;
+    	*p_end_char = 0;	
+    	lac[celln] = atol(p_start_char);		        
+	    }
     
 }
 
@@ -1212,6 +1564,9 @@ void SIM908_parse_RTC_date(char *message)
 void SIM908_set_RTC_date()
 {
     char tmpCMD[35];
+    
+    //we have to add to the saved time the milliseconds from the time of acquisition
+    //drift = millis() - rtcAcquisitionTime
     
     sprintf_P(tmpCMD,PSTR("AT+CCLK=\"%02d/%02d/%02d,%02d:%02d:%02d+00\"\r"),year, month, day, hour, minute, second);
     SIM908_send_at((char*)tmpCMD);
