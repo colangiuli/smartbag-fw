@@ -7,6 +7,8 @@
 
 //TODO
 /*
+    debuggare cosa succede se arriva una chiamata mentre si stanno inviando dei dati
+
 	migliorare la gestione della data,(usare l'RTC)
 		-magari si potrebbe ricevere la data esatta dall'iphone o meglio ancora da internet...
 		-bisogna calcolare il tempo trascorso dall'ultimo aggiornamento e aggiornare la data di conseguenza prima di inviarla negli alert
@@ -459,6 +461,16 @@ int8_t sim908_read_and_parse(uint16_t tout_ms)
 			    return SUCCESS;
 		    }
 		}
+		//CONNECT OK RECEIVED?	
+		p_char = strstr_P(response, PSTR("CONNECT FAIL")); 
+		if ( p_char != NULL){
+		    if (waiting_connection == TRUE){ 		
+                waiting_connection = FALSE;
+                waiting_response = FALSE;
+			    return FAILURE;
+		    }
+		}		
+		
 		
 		//OK RECEIVED?	
 		p_char = strstr_P(response, PSTR("OK")); 
@@ -484,7 +496,7 @@ int8_t sim908_read_and_parse(uint16_t tout_ms)
 		if ( p_char != NULL){		
     	    if (waiting_response == TRUE){ 		
                 waiting_response = FALSE;
-    		    return SUCCESS;
+    		    return FAILURE;
     	    }
 		}		
 									
@@ -1026,15 +1038,23 @@ void SIM908_print_time(char *answer)
 ////         	              SIM908_cloud_send                         ////
 ////////////////////////////////////////////////////////////////////////////
 
-void SIM908_cloud_send(const char* message){
-    SIM908_cloud_connect();
+int SIM908_cloud_send(const char* message){
+    int result_value = 0;
+    
+    result_value = SIM908_cloud_connect();
+    if (result_value == FAILURE)
+        return FAILURE;
     SIM908_cloud_send_headers();
     SIM908_cloud_send_message(message);
+    
+    return SUCCESS;
 }
 
     
-void SIM908_cloud_connect()
+int SIM908_cloud_connect()
 {	
+    int result_value = 0;
+    
       //add header to packages received
 	  SIM908_send_at_P(PSTR("AT+CIPHEAD=1\r"));
 	  sim908_read_and_parse(SHORT_TOUT);
@@ -1052,12 +1072,16 @@ void SIM908_cloud_connect()
 	  //delay(2000);
 
       waiting_connection = TRUE;
-	  sim908_read_and_parse(10000);
-
+	  result_value = sim908_read_and_parse(10000);
+      if (result_value == FAILURE)
+          return FAILURE;
 	  if ((waiting_response == TRUE) || (waiting_connection == TRUE)) {
           //delay(2000);
-	      sim908_read_and_parse(10000);
+	      result_value = sim908_read_and_parse(10000);
+          if (result_value == FAILURE)
+              return FAILURE;
 	  }
+      return SUCCESS;
 }
 
 void SIM908_cloud_send_headers(){
@@ -1161,18 +1185,23 @@ void SIM908_send_impact_2_cloud()
 ////         	              SIM908_send_cell_data_2_cloud             ////
 ////////////////////////////////////////////////////////////////////////////
 
-void SIM908_send_cell_data_2_cloud()
+int SIM908_send_cell_data_2_cloud()
 {
     char msg_txt[50];
     int msg_size = 0;
     char messageSize[4];
 	char end_c[2];
     uint8_t i; 
-	  
+    int result_value = 0;
+    	  
     end_c[0]=0x1a;
 	end_c[1]='\0';
-	 
-    SIM908_cloud_connect();
+
+    
+    result_value = SIM908_cloud_connect();
+    if (result_value == FAILURE)
+        return FAILURE;
+        
     SIM908_cloud_send_headers();
     
       ////////////////// MESSAGE SIZE///////////////////////////
@@ -1213,6 +1242,7 @@ void SIM908_send_cell_data_2_cloud()
           delay(500);
 	      sim908_read_and_parse(SHORT_TOUT);
 	  }	
+      return SUCCESS;
 
 }
 
