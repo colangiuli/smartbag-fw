@@ -397,7 +397,7 @@ int8_t sim908_read_and_parse(uint16_t tout_ms)
 		{		
 			incoming_call = TRUE;
 			//TODO we need to check if the number is authorized to receive response
-			continue;
+			return SUCCESS;
 		}
 			
 		//GPRS DATA PACKET RECEIVED?	
@@ -1073,42 +1073,52 @@ int SIM908_cloud_connect()
 
       waiting_connection = TRUE;
 	  result_value = sim908_read_and_parse(10000);
-      if (result_value == FAILURE)
+      if ((result_value == FAILURE) || (incoming_call == TRUE))
           return FAILURE;
+    
 	  if ((waiting_response == TRUE) || (waiting_connection == TRUE)) {
           //delay(2000);
 	      result_value = sim908_read_and_parse(10000);
-          if (result_value == FAILURE)
+          if ((result_value == FAILURE) || (incoming_call == TRUE))
               return FAILURE;
 	  }
       return SUCCESS;
 }
 
-void SIM908_cloud_send_headers(){
+int SIM908_cloud_send_headers(){
+	
+	  int result_value = 0;     
 	         
 	  SIM908_send_at_P(PSTR("AT+CIPSEND\r"));
 	  //delay(2000);
       waiting_prompt = TRUE;
-	  sim908_read_and_parse(500);
+	  result_value = sim908_read_and_parse(500);
+	  if (result_value == FAILURE)
+          return FAILURE;
   	  if (waiting_prompt == TRUE) {
           //delay(2000);
-	      sim908_read_and_parse(2000);
+	      result_value = sim908_read_and_parse(2000);
+    	  if (result_value == FAILURE)
+              return FAILURE;
 	  }    
 	  
 	  if ((waiting_response == TRUE) || (waiting_connection == TRUE) || (waiting_prompt == TRUE) ) {
           //something bad happened...
-          return;
+          return FAILURE;
 	  }
 
 	  SIM908_send_at_P(PSTR("POST /DataCollector.php HTTP/1.0\r\n"));
 	  SIM908_send_at_P(PSTR("Host: 54.245.111.61\r\n"));
 	  SIM908_send_at_P(PSTR("User-Agent: Route66/0.1\r\n"));
 	  SIM908_send_at_P(PSTR("Content-Type: application/json\r\n"));
+	  
+      return SUCCESS;
 }
 
-void SIM908_cloud_send_message(const char* message){
+int SIM908_cloud_send_message(const char* message){
       char messageSize[4];
 	  char end_c[2];
+	  int result_value = 0;   
     
       end_c[0]=0x1a;
 	  end_c[1]='\0';
@@ -1121,11 +1131,20 @@ void SIM908_cloud_send_message(const char* message){
 	  SIM908_send_at((char*)message);
 	  SIM908_send_at_P(PSTR("\n\n\n"));
       mySerial.writeBytes((unsigned char *)end_c,  1);
-	  sim908_read_and_parse(SHORT_TOUT);
+	  result_value = sim908_read_and_parse(SHORT_TOUT);
+	  if (result_value == FAILURE)
+          return FAILURE;
 	  if (waiting_response == TRUE){
           delay(500);
-	      sim908_read_and_parse(SHORT_TOUT);
+	      result_value = sim908_read_and_parse(SHORT_TOUT);
+    	  if (result_value == FAILURE)
+              return FAILURE;
 	  }
+	  if (waiting_response == TRUE){
+          return FAILURE;
+      }else{
+          return SUCCESS;
+      }
 }
 
 
@@ -1133,42 +1152,49 @@ void SIM908_cloud_send_message(const char* message){
 ////         	              SIM908_send_pos_2_cloud                   ////
 ////////////////////////////////////////////////////////////////////////////
 
-void SIM908_send_pos_2_cloud()
+int SIM908_send_pos_2_cloud()
 {
+    int result_value = 0;
     //{"imei": "013043001522278","position": ["2012-04-14 12:20:30", "dddddddd", "ddddddddd", "SSS"]}
     char position_txt[100];
     sprintf_P(position_txt,PSTR("{\"imei\": \"%s\",\"position\": [[\"20%d-%d-%d %d:%d:%d\", \"%ld\", \"%ld\", \"%u\"]]}"),IMEI, year, month, day, hour, minute, second, latitude, longitude, groundspeed); 
-    SIM908_cloud_send(position_txt);
+    result_value = SIM908_cloud_send(position_txt);
+    return result_value;
 }
 
 ////////////////////////////////////////////////////////////////////////////
 ////         	              SIM908_send_open_2_cloud                  ////
 ////////////////////////////////////////////////////////////////////////////
 
-void SIM908_send_open_2_cloud()
+int SIM908_send_open_2_cloud()
 {
+    int result_value = 0;
     char msg_txt[100];
     sprintf_P(msg_txt,PSTR("{\"imei\": \"%s\",\"opening\": [\"20%d-%d-%d %d:%d:%d\"]}"),IMEI, year, month, day, hour, minute, second); 
-    SIM908_cloud_send(msg_txt);
+    result_value = SIM908_cloud_send(msg_txt);
+    return result_value;
 }
 
 ////////////////////////////////////////////////////////////////////////////
 ////         	              SIM908_send_move_2_cloud                  ////
 ////////////////////////////////////////////////////////////////////////////
 
-void SIM908_send_move_2_cloud()
+int SIM908_send_move_2_cloud()
 {
+    int result_value = 0;
     char msg_txt[100];
     sprintf_P(msg_txt,PSTR("{\"imei\": \"%s\",\"move\": [\"20%d-%d-%d %d:%d:%d\"]}"),IMEI, year, month, day, hour, minute, second); 
-    SIM908_cloud_send(msg_txt);
+    result_value = SIM908_cloud_send(msg_txt);
+    return result_value;
 }
 
 ////////////////////////////////////////////////////////////////////////////
 ////         	              SIM908_send_impact_2_cloud                ////
 ////////////////////////////////////////////////////////////////////////////
 
-void SIM908_send_impact_2_cloud()
+int SIM908_send_impact_2_cloud()
 {
+    int result_value = 0;
     char msg_txt[100];
 	int16_t max_impact = lis_x;
 
@@ -1178,7 +1204,8 @@ void SIM908_send_impact_2_cloud()
 		max_impact = lis_z;
 	
     sprintf_P(msg_txt,PSTR("{\"imei\": \"%s\",\"handling\": [[%d, \"20%d-%d-%d %d:%d:%d\"]]}"),IMEI, max_impact, year, month, day, hour, minute, second); 
-    SIM908_cloud_send(msg_txt);
+    result_value = SIM908_cloud_send(msg_txt);
+    return result_value;
 }
 
 ////////////////////////////////////////////////////////////////////////////
@@ -1237,12 +1264,20 @@ int SIM908_send_cell_data_2_cloud()
 	  ////////////////// MESSAGE ///////////////////////////
 	  SIM908_send_at_P(PSTR("\n\n\n"));
       mySerial.writeBytes((unsigned char *)end_c,  1);
-	  sim908_read_and_parse(SHORT_TOUT);
-	  if (waiting_response == TRUE){
-          delay(500);
-	      sim908_read_and_parse(SHORT_TOUT);
-	  }	
-      return SUCCESS;
+      result_value = sim908_read_and_parse(SHORT_TOUT);
+  	  if (result_value == FAILURE)
+            return FAILURE;
+  	  if (waiting_response == TRUE){
+            delay(500);
+  	      result_value = sim908_read_and_parse(SHORT_TOUT);
+      	  if (result_value == FAILURE)
+                return FAILURE;
+  	  }
+  	  if (waiting_response == TRUE){
+            return FAILURE;
+        }else{
+            return SUCCESS;
+        }
 
 }
 
@@ -1252,33 +1287,38 @@ int SIM908_send_cell_data_2_cloud()
 
 void SIM908_send_gprs_data()
 {
+    int result_value = 0;
 		//dbg_print_P(PSTR("SENDING ALARM THOUGHT GPRS\n"));
 
 		if(CHECKBIT(data_2_send,MOVE_ALARM))
 		{
-            SIM908_send_move_2_cloud();
-			cbi(data_2_send,MOVE_ALARM);
+            result_value = SIM908_send_move_2_cloud();
+            if (result_value == SUCCESS)
+			    cbi(data_2_send,MOVE_ALARM);
 		}//end if CHECKBIT
 		
 		if(CHECKBIT(data_2_send,OPEN_ALARM))
 		{
-            SIM908_send_open_2_cloud();
-			cbi(data_2_send,OPEN_ALARM);
+            result_value = SIM908_send_open_2_cloud();
+            if (result_value == SUCCESS)
+			    cbi(data_2_send,OPEN_ALARM);
 		}//end if CHECKBIT
 		
 		if(CHECKBIT(data_2_send,POSITION))
 		{
 		    if (fix_status == FIX_VALID)
-                SIM908_send_pos_2_cloud();
+                result_value = SIM908_send_pos_2_cloud();
             else
-                SIM908_send_cell_data_2_cloud();
-			cbi(data_2_send,POSITION);
+                result_value = SIM908_send_cell_data_2_cloud();
+			if (result_value == SUCCESS)
+			    cbi(data_2_send,POSITION);
 		}//end if CHECKBIT
 
 		if(CHECKBIT(data_2_send,IMPACT_ALARM))
 		{
-            SIM908_send_impact_2_cloud();
-			cbi(data_2_send,IMPACT_ALARM);
+            result_value = SIM908_send_impact_2_cloud();
+            if (result_value == SUCCESS)
+			    cbi(data_2_send,IMPACT_ALARM);
 		}//end if CHECKBIT
 }
 

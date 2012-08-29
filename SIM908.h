@@ -69,14 +69,15 @@ void SIM908_print_position(char *answer);
 char SIM908_check_status();
 void SIM908_print_date(char *answer);
 void SIM908_print_time(char *answer);
+
 int SIM908_cloud_send(const char* message);
 int  SIM908_cloud_connect();
-void SIM908_cloud_send_headers();
-void SIM908_cloud_send_message(const char* message);
-void SIM908_send_pos_2_cloud();
-void SIM908_send_open_2_cloud();
-void SIM908_send_move_2_cloud();
-void SIM908_send_impact_2_cloud();
+int SIM908_cloud_send_headers();
+int SIM908_cloud_send_message(const char* message);
+int SIM908_send_pos_2_cloud();
+int SIM908_send_open_2_cloud();
+int SIM908_send_move_2_cloud();
+int SIM908_send_impact_2_cloud();
 int SIM908_send_cell_data_2_cloud();
 void SIM908_send_gprs_data();
 
