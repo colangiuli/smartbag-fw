@@ -1247,7 +1247,12 @@ void SIM908_send_gprs_data()
 
 		if(CHECKBIT(data_2_send,IMPACT_ALARM))
 		{
+<<<<<<< HEAD
             SIM908_send_impact_2_cloud();
+=======
+            //SIM908_send_impact_2_cloud();
+			SIM908_send_cell_data_2_cloud();
+>>>>>>> bb83114941c9a4f2cb4f8287dcc0e332ca218ac6
 			cbi(data_2_send,IMPACT_ALARM);
 		}//end if CHECKBIT
 }
