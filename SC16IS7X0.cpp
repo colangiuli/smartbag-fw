@@ -140,9 +140,15 @@ unsigned char SC16IS7X0::write (unsigned char data) {
 
 char SC16IS7X0::writeBytes (unsigned char *data, unsigned char buffsize) {
 	int i;
+    int sentchar = 0;
 	for (i = 0; i <  buffsize; i++){
 		I2C_write(UART_ADDR, THR, data[i]);
-		//delay(10);
+		if (++sentchar >= 60){
+		    delay(100);
+            sentchar = 0;
+		}else{
+		    delay(10);
+		}
 	}
     return 1;
 }	

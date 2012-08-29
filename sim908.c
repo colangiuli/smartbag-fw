@@ -10,9 +10,6 @@
 	migliorare la gestione della data,(usare l'RTC)
 		-magari si potrebbe ricevere la data esatta dall'iphone o meglio ancora da internet...
 		-bisogna calcolare il tempo trascorso dall'ultimo aggiornamento e aggiornare la data di conseguenza prima di inviarla negli alert
-        
-    -gestire la posizione tramite celle
-		-inviare i dati delle celle tramite GPRS
 	
 	inviare i dati della batt tramite BT
 	
@@ -1030,28 +1027,28 @@ void SIM908_print_time(char *answer)
 ////////////////////////////////////////////////////////////////////////////
 
 void SIM908_cloud_send(const char* message){
+    SIM908_cloud_connect();
+    SIM908_cloud_send_headers();
+    SIM908_cloud_send_message(message);
+}
 
-	  char messageSize[4];
-	  char end_c[2];
-	  unsigned int count = 0; 
-
-	  end_c[0]=0x1a;
-	  end_c[1]='\0';
-	
+    
+void SIM908_cloud_connect()
+{	
       //add header to packages received
-	  count = SIM908_send_at_P(PSTR("AT+CIPHEAD=1\r"));
+	  SIM908_send_at_P(PSTR("AT+CIPHEAD=1\r"));
 	  sim908_read_and_parse(SHORT_TOUT);
-      count = SIM908_send_at_P(PSTR("AT+CIPSHUT\r"));
+      SIM908_send_at_P(PSTR("AT+CIPSHUT\r"));
 	  sim908_read_and_parse(SHORT_TOUT);
 	  if (waiting_response == TRUE)
 	    sim908_read_and_parse(SHORT_TOUT);
 	  //set APN            
-	  count = SIM908_send_at_P(PSTR("AT+CIPCSGP=1,\"ibox.tim.it\"\r")); //this command can answer ok or error
+	  SIM908_send_at_P(PSTR("AT+CIPCSGP=1,\"ibox.tim.it\"\r")); //this command can answer ok or error
 	  sim908_read_and_parse(SHORT_TOUT);
 	  if (waiting_response == TRUE)
 	    sim908_read_and_parse(SHORT_TOUT);
 
-	  count = SIM908_send_at_P(PSTR("AT+CIPSTART=\"TCP\",\"www.blue-chain.com\", 80\r"));
+	  SIM908_send_at_P(PSTR("AT+CIPSTART=\"TCP\",\"54.245.111.61\", 80\r"));
 	  //delay(2000);
 
       waiting_connection = TRUE;
@@ -1061,8 +1058,11 @@ void SIM908_cloud_send(const char* message){
           //delay(2000);
 	      sim908_read_and_parse(10000);
 	  }
+}
+
+void SIM908_cloud_send_headers(){
 	         
-	  count = SIM908_send_at_P(PSTR("AT+CIPSEND\r"));
+	  SIM908_send_at_P(PSTR("AT+CIPSEND\r"));
 	  //delay(2000);
       waiting_prompt = TRUE;
 	  sim908_read_and_parse(500);
@@ -1075,20 +1075,27 @@ void SIM908_cloud_send(const char* message){
           //something bad happened...
           return;
 	  }
-      
 
-	  count = SIM908_send_at_P(PSTR("POST /DataCollector.php HTTP/1.0\r\n"));
-	  count = SIM908_send_at_P(PSTR("Host: blue-chain.com\r\n"));
-	  count = SIM908_send_at_P(PSTR("User-Agent: Route66/0.1\r\n"));
-	  count = SIM908_send_at_P(PSTR("Content-Type: application/json\r\n"));
+	  SIM908_send_at_P(PSTR("POST /DataCollector.php HTTP/1.0\r\n"));
+	  SIM908_send_at_P(PSTR("Host: 54.245.111.61\r\n"));
+	  SIM908_send_at_P(PSTR("User-Agent: Route66/0.1\r\n"));
+	  SIM908_send_at_P(PSTR("Content-Type: application/json\r\n"));
+}
 
-	  count = SIM908_send_at_P(PSTR("Content-length: "));
+void SIM908_cloud_send_message(const char* message){
+      char messageSize[4];
+	  char end_c[2];
+    
+      end_c[0]=0x1a;
+	  end_c[1]='\0';
+    
+	  SIM908_send_at_P(PSTR("Content-length: "));
 	  itoa(strlen(message), messageSize, 10);
-	  count = SIM908_send_at(messageSize);
-	  count = SIM908_send_at_P(PSTR("\r\n\r\n"));
+	  SIM908_send_at(messageSize);
+	  SIM908_send_at_P(PSTR("\r\n\r\n"));
 	  
-	  count = SIM908_send_at((char*)message);
-	  count = SIM908_send_at_P(PSTR("\n\n\n"));
+	  SIM908_send_at((char*)message);
+	  SIM908_send_at_P(PSTR("\n\n\n"));
       mySerial.writeBytes((unsigned char *)end_c,  1);
 	  sim908_read_and_parse(SHORT_TOUT);
 	  if (waiting_response == TRUE){
@@ -1156,29 +1163,58 @@ void SIM908_send_impact_2_cloud()
 
 void SIM908_send_cell_data_2_cloud()
 {
-    char msg_txt[370];
-	int16_t max_impact = lis_x;
+    char msg_txt[50];
+    int msg_size = 0;
+    char messageSize[4];
+	char end_c[2];
+    uint8_t i; 
+	  
+    end_c[0]=0x1a;
+	end_c[1]='\0';
+	 
+    SIM908_cloud_connect();
+    SIM908_cloud_send_headers();
+    
+      ////////////////// MESSAGE SIZE///////////////////////////
+	  
+      msg_size += sprintf_P(msg_txt,PSTR("{\"imei\": \"%s\", "), IMEI );    
+      msg_size += sprintf_P(msg_txt,PSTR("\"celldata\": [\"20%d-%d-%d %d:%d:%d\", ["), year, month, day, hour, minute, second );    
+      for (i = 0; i <=5; i++){
+          msg_size += sprintf_P(msg_txt,PSTR("[%u,%u,%u,%u,%u],"), cellid[i], mcc[i], mnc[i], lac[i], rxl[i] );
+      }   
+      msg_size += sprintf_P(msg_txt,PSTR("[%u,%u,%u,%u,%u]]]}"), cellid[6], mcc[6], mnc[6], lac[6], rxl[6] );
+      
+	  ////////////////// MESSAGE SIZE///////////////////////////
+	  SIM908_send_at_P(PSTR("Content-length: "));
+	  itoa(msg_size, messageSize, 10);
+	  SIM908_send_at(messageSize);
+	  SIM908_send_at_P(PSTR("\r\n\r\n"));
+	  ////////////////// MESSAGE ///////////////////////////
+	  
+      sprintf_P(msg_txt,PSTR("{\"imei\": \"%s\", "), IMEI );
+      SIM908_send_at(msg_txt);
+      
+      sprintf_P(msg_txt,PSTR("\"celldata\": [\"20%d-%d-%d %d:%d:%d\", ["), year, month, day, hour, minute, second );
+      SIM908_send_at(msg_txt);
+      
+      for (i = 0; i <=5; i++){
+          sprintf_P(msg_txt,PSTR("[%u,%u,%u,%u,%u],"), cellid[i], mcc[i], mnc[i], lac[i], rxl[i] );
+          SIM908_send_at(msg_txt);
+      }
+      
+      sprintf_P(msg_txt,PSTR("[%u,%u,%u,%u,%u]]]}"), cellid[6], mcc[6], mnc[6], lac[6], rxl[6] );
+      SIM908_send_at(msg_txt);
 
-	if (lis_y > max_impact)
-		max_impact = lis_y;
-	if (lis_z > max_impact)
-		max_impact = lis_z;
-	
-    sprintf_P(msg_txt,PSTR("{\"imei\": \"%s\", \"celldata\": [\"tstamp\": \"20%d-%d-%d %d:%d:%d\", \"cells\": [[%u,%u,%u,%u,%u],[%u,%u,%u,%u,%u],[%u,%u,%u,%u,%u],[%u,%u,%u,%u,%u],[%u,%u,%u,%u,%u],[%u,%u,%u,%u,%u],[%u,%u,%u,%u,%u]]]}"),
-    IMEI, year, month, day, hour, minute, second, 
-    cellid[0], mcc[0], mnc[0], lac[0], rxl[0],
-    cellid[1], mcc[1], mnc[1], lac[1], rxl[1],
-    cellid[2], mcc[2], mnc[2], lac[2], rxl[2],
-    cellid[3], mcc[3], mnc[3], lac[3], rxl[3],
-    cellid[4], mcc[4], mnc[4], lac[4], rxl[4],
-    cellid[5], mcc[5], mnc[5], lac[5], rxl[5],
-    cellid[6], mcc[6], mnc[6], lac[6], rxl[6]
-    ); 
-    SIM908_cloud_send(msg_txt);
+	  ////////////////// MESSAGE ///////////////////////////
+	  SIM908_send_at_P(PSTR("\n\n\n"));
+      mySerial.writeBytes((unsigned char *)end_c,  1);
+	  sim908_read_and_parse(SHORT_TOUT);
+	  if (waiting_response == TRUE){
+          delay(500);
+	      sim908_read_and_parse(SHORT_TOUT);
+	  }	
+
 }
-
-
-
 
 ////////////////////////////////////////////////////////////////////////////
 ////         	              SIM908_send_gprs_data                     ////
@@ -1202,14 +1238,16 @@ void SIM908_send_gprs_data()
 		
 		if(CHECKBIT(data_2_send,POSITION))
 		{
-            SIM908_send_pos_2_cloud();
+		    if (fix_status == FIX_VALID)
+                SIM908_send_pos_2_cloud();
+            else
+                SIM908_send_cell_data_2_cloud();
 			cbi(data_2_send,POSITION);
 		}//end if CHECKBIT
 
 		if(CHECKBIT(data_2_send,IMPACT_ALARM))
 		{
-            //SIM908_send_impact_2_cloud();
-            SIM908_send_cell_data_2_cloud();
+            SIM908_send_impact_2_cloud();
 			cbi(data_2_send,IMPACT_ALARM);
 		}//end if CHECKBIT
 }
