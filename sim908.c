@@ -7,8 +7,6 @@
 
 //TODO
 /*
-    debuggare cosa succede se arriva una chiamata mentre si stanno inviando dei dati
-
 	migliorare la gestione della data,(usare l'RTC)
 		-magari si potrebbe ricevere la data esatta dall'iphone o meglio ancora da internet...
 		-bisogna calcolare il tempo trascorso dall'ultimo aggiornamento e aggiornare la data di conseguenza prima di inviarla negli alert
@@ -1079,7 +1077,7 @@ int SIM908_cloud_connect()
 	  if ((waiting_response == TRUE) || (waiting_connection == TRUE)) {
           //delay(2000);
 	      result_value = sim908_read_and_parse(10000);
-          if ((result_value == FAILURE) || (incoming_call == TRUE))
+          if ((result_value == FAILURE) || (incoming_call == TRUE) || (waiting_response == TRUE) || (waiting_connection == TRUE))
               return FAILURE;
 	  }
       return SUCCESS;

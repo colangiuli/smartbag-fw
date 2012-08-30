@@ -1,0 +1,164 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<configuration>
+
+    <service uuid="1800">
+      <description>Generic Access Profile</description>
+
+      <characteristic uuid="2a00">
+        <properties read="true" const="true" />
+        <value>Smart Bag prgct</value>
+      </characteristic>
+
+      <characteristic uuid="2a01">
+        <properties read="true" const="true" />
+        <value type="hex">0576</value>
+      </characteristic>
+
+    </service>
+
+    <service uuid="180a">
+      <description>Device Information</description>
+
+      <characteristic uuid="2a29">
+        <properties read="true" const="true" />
+        <value>Smart Bag inc.</value>
+      </characteristic>
+      
+      <!-- Hardware  revision -->
+      <characteristic uuid="2a27">
+        <properties read="true" const="true" />
+        <value>1</value>
+      </characteristic>
+
+      <!-- Firmaware revision -->
+      <characteristic uuid="2a26">
+        <properties read="true" const="true" />
+        <value>1</value>
+        
+      </characteristic>
+
+    </service>
+    
+<!--    <service type="primary" uuid="52afb991-620c-480f-9410-add965cbf0c4"  advertise="true" id="shock_service"> -->
+    <service type="primary" uuid="f240">
+          <description>Shock service</description>
+<!--        <characteristic uuid="1d562e11-8c7b-4f93-b5cf-20705eeb42a4"> -->
+          <characteristic uuid="f241">
+
+            <properties read="true" indicate="true" />
+            <!-- handle 15 = 0xF -->
+            <!-- example 50g 15/11/83 19:00 is 501511831900 -->
+            <value length="6"/>        
+        </characteristic>
+    </service>
+    
+<!--    <service type="primary" uuid="9acfc869-0262-4033-9828-cf69aa506faf"  advertise="true" id="light_service"> -->
+    <service type="primary" uuid="f260">    
+        <description>Light service</description>
+<!--    <characteristic uuid="35bf7700-5178-4e26-8288-7777da3b7eca"> -->
+        <characteristic uuid="f261">
+            <properties read="true" indicate="true" />
+            <!-- handle 19 = 0x13 -->
+            <!-- example opening 15/11/83 19:00 is 011511831900 -->
+            <value length="6" />        
+        </characteristic>
+    </service>
+
+    <service uuid="1802">
+        <description>Immediate Alert Service</description>
+        <characteristic uuid="2a06">
+            <properties read="true" indicate="true" />
+            <!-- handle 23 = 0x17 -->
+            <value length="1" />
+        </characteristic>
+    </service>
+
+    <service uuid="f280">
+        <!-- example 0: normal, 1:freeze, 2:flight, 4:always notify -->
+        <description>Operating mode</description>
+        <characteristic uuid="f281">
+            <properties read="true" write="true"/>
+            <!-- handle 27 = 0x17 -->
+            <value length="1" />
+        </characteristic>
+    </service>
+  
+    <service uuid="f290">
+        <!-- example 0: normal, 1:freeze, 2:flight, 4:always notify -->
+        <description>Freeze mode</description>
+        <characteristic uuid="f291">
+            <properties read="true" write="true"/>
+            <!-- handle 30 = 0x17 -->
+            <value length="1" />
+        </characteristic>
+    </service>
+    
+    
+    <!-- We must understand the difference between indicate/notify -->
+    <service uuid="180F">
+        <description>Battery Level</description>
+        <characteristic uuid="2a19">
+            <properties read="true" notify="true" />
+            <!-- handle 33 = 0x18 -->
+            <value length="1"/>
+        </characteristic>
+    </service>
+    
+    <!-- We must understand the difference between indicate/notify -->
+    <service uuid="1804">
+        <description>TX Power Level</description>
+        <characteristic uuid="2a07">
+            <properties read="true" write="true"/>
+            <!-- handle 37 = 0x18 -->
+            <value length="1"/>
+        </characteristic>
+    </service>
+
+    <!-- We need to complete here adding every setting needed -->
+    <service uuid="F301">
+        <description>Debug service</description>
+		<!-- message-->
+        <characteristic uuid="F302">
+            <properties read="true" indicate="true" />
+            <!-- handle 40 = 0x17 -->
+            <value length="100" />
+        </characteristic>
+		<!-- Accel XYZ-->
+        <characteristic uuid="F303">
+            <properties read="true" indicate="true" />
+            <!-- handle 43 = 0x17 -->
+            <value length="4" />
+        </characteristic>
+
+		<!-- GPS 4LONG 4LAT 2SPEED-->
+        <characteristic uuid="F304">
+            <properties read="true" indicate="true" />
+            <!-- handle 46 = 0x17 -->
+            <value length="10" />
+        </characteristic>
+    </service>
+
+    <!-- We need to complete here adding every setting needed -->
+    <service uuid="F401">
+        <description>threshold service</description>
+		<!-- move-->
+        <characteristic uuid="F402">
+            <properties read="true" indicate="true" />
+            <!-- handle 50 = 0x17 -->
+            <value length="2" />
+        </characteristic>
+		<!-- shock-->
+        <characteristic uuid="F403">
+            <properties read="true" indicate="true" />
+            <!-- handle 53 = 0x17 -->
+            <value length="2" />
+        </characteristic>
+        <!-- rssi-->
+        <characteristic uuid="F405">
+            <properties read="true" indicate="true" />
+            <!-- handle 56 = 0x17 -->
+            <value length="2" />
+        </characteristic>
+    </service>
+
+</configuration>
