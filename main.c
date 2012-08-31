@@ -7,28 +7,15 @@
 #include "SIM908.h"
 #include "utils.h"
 #include "BG_serial.h"
+#include "eeprom_store.h"
 
 
-#define DEBUG_MSG_HANDLE 37
 
-#define ACCEL_X_HANDLE 40
-#define ACCEL_Y_HANDLE 43
-#define ACCEL_Z_HANDLE 46
 
-#define GPS_LONG_HANDLE 49
-#define GPS_LAT_HANDLE 52
-#define GPS_SPEED_HANDLE 55
 
-#define GPS_SPEED_HANDLE 55
 
-#define SHOCK_SERVICE_HANDLE 15
-#define LIGHT_SERVICE_HANDLE 19
-
-#define ACCEL_THRESHOLD_MOVE 300
-#define ACCEL_THRESHOLD_IMPACT 1000
-
-#define LIGHT_THR 100
 #define LIGHT_DEBOUNCE_MS 60000
+#define BATTERY_UPDATE_INTERVAL 60000
 
 int16_t lis_x;
 int16_t lis_y;
@@ -39,15 +26,20 @@ int lightSensorPin = A0;
 int lightSensorValue = 0; 
 
 unsigned long light_debounce_start = 0;
+unsigned long battery_update_start = 0;
 
 uint8_t move_enabled = FALSE;
+uint8_t push_enabled = FALSE;
+uint16_t accel_thr_move = 300;
+uint16_t accel_thr_impact = 1000;
+uint16_t light_thr = 100;
 
 char received[64], numchar;
 
 extern SC16IS7X0 BG_UART;
 extern uint8_t data_2_send;
 extern uint8_t hour, minute, second, year, month, day;
-
+extern int8_t  BATT_level;
 LIS3DH lis;
 
 void setup();
@@ -55,6 +47,8 @@ void loop();
 
 //TODO
 /*
+    //gestire gli stati APERTO / CHIUSO per il sensore di lucw
+    
 	in futuro bisogna gestire correttamente gli interrupt dei due convertitore seriale I2C
 	leggere l'op mode tramite BT o comunque gestire se l'iphone mi cambia l'OP mode
 */
@@ -74,8 +68,8 @@ void setup()
   	dbg_print_P(PSTR("START!"));
   	blinkLed(BLINK_GREEN, 10, 300);
 	
-    lis.begin();        // enable LIS3DH
-  	//Serial.begin(250000);  // start serial for output
+	// enable LIS3DH
+    lis.begin();        
 
 	SIM908_init();	
 
@@ -92,30 +86,9 @@ void setup()
 	if (command_status != 0 )
 		dbg_print_P(PSTR("Error!!!\n"));
     
-	uint16_t handle = 3;
-	char attribute[64];
-
-	//now we need to read the operating mode
-	//code here...
-	dbg_print_P(PSTR("READ OP MODE\n"));
-/*
-	char attr_write[64] = "MyHe";
-	dbg_print_P(PSTR("write attr\n"));
-
-	if (write_att_request_by_handle_wo_offset(handle, strlen(attr_write), (uint8_t *)attr_write, WAIT_RESPONSE) != 0 )
-		dbg_print_P(PSTR("Error writing the attribute\n"));
+	dbg_print_P(PSTR("READ SETTINGS FROM EEPROM\n"));
+	init_eeprom();
 	
-	dbg_print_P(PSTR("memset\n"));
-	memset(attribute, '\0', 64);
-
-	read_attribute_by_handle_wo_offset(handle, attribute, WAIT_RESPONSE );
-	//(handle, attribute, WAIT_RESPONSE );
-
-	char *attribute_ptr = attribute;
-
-    sprintf(tmpStr, "Attr read!! len: %d Attr: %s\n", attribute[0], ++attribute_ptr);
-    Serial.println(tmpStr);
-*/
     dbg_print_P(PSTR("MAIN LOOP\n"));
 }
 
@@ -142,6 +115,13 @@ void ble_task()
 //		evaluated_rssi = rssi;// ^ 0xFF;
 //		sprintf(debugString, "the RSSI is %d\n\n", evaluated_rssi);
 //		Serial.println(debugString);
+
+        //send battery data to iphone
+        if (millis() - battery_update_start >= BATTERY_UPDATE_INTERVAL){
+            if (write_att_request_by_handle_wo_offset(BATTERY_LEVEL_HANDLE, 1, (uint8_t *) &BATT_level, WAIT_RESPONSE) != 0 )
+                dbg_print_P(PSTR("Error updating batt level\n"));
+            battery_update_start = millis();
+        }
 	}
  
 //	numchar = I2C_UART.readBytes ((unsigned char *)received, 64);
@@ -161,9 +141,9 @@ void LIS3DH_task()
 		uint16_t threshold;
 		
 		if (move_enabled == TRUE)
-			threshold = ACCEL_THRESHOLD_MOVE;
+			threshold = accel_thr_move;
 		else
-			threshold = ACCEL_THRESHOLD_IMPACT;
+			threshold = accel_thr_impact;
 
 		lis.getXValue(&lis_x);
 		lis.getYValue(&lis_y);
@@ -186,16 +166,18 @@ void LIS3DH_task()
 
 		if ( (lis_x > threshold) || (lis_y > threshold) || (lis_z > threshold) ){
 			dbg_print_P(PSTR("THR exceded!\n"));
-			if ( is_connection_established() == 1 )
-			{
-				dbg_print_P(PSTR("BT SEND ---->\n"));
-				uint8_t message[7];
 				int16_t max_impact = lis_x;
 
 					if (lis_y > max_impact)
 						max_impact = lis_y;
 					if (lis_z > max_impact)
 						max_impact = lis_z;
+			
+
+			if ( is_connection_established() == 1 )
+			{
+				dbg_print_P(PSTR("BT SEND ---->\n"));
+				uint8_t message[7];
 					//uint8_t hour, minute, second, year, month, day;
 					memcpy(message, (uint8_t *)&max_impact, 2);			
 					message[2] = day;
@@ -206,18 +188,23 @@ void LIS3DH_task()
 											
 					if (move_enabled == TRUE){
 					    if (write_att_request_by_handle_wo_offset(SHOCK_SERVICE_HANDLE, 7, message, WAIT_RESPONSE) != 0 )
-						dbg_print_P(PSTR("Error writing accel z\n"));
+						dbg_print_P(PSTR("Error writing shock service\n"));
 					}else{
 						if (write_att_request_by_handle_wo_offset(SHOCK_SERVICE_HANDLE, 7, message, WAIT_RESPONSE) != 0 )
-						dbg_print_P(PSTR("Error writing accel z\n"));
+						dbg_print_P(PSTR("Error writing shock service\n"));
 					}
 
 			}else{
-					dbg_print_P(PSTR("gprs SEND ---->\n"));
-					if (move_enabled == TRUE)
-						sbi(data_2_send,MOVE_ALARM);
-					else
-						sbi(data_2_send,IMPACT_ALARM);
+			        if(push_enabled == FALSE ){
+					    dbg_print_P(PSTR("gprs SEND ---->\n"));
+    					if (move_enabled == TRUE)
+    						sbi(data_2_send,MOVE_ALARM);
+    					else
+    						sbi(data_2_send,IMPACT_ALARM);
+					}else{
+					    dbg_print_P(PSTR("EEPROM LOG -->\n"));
+					    store_data_event_eeprom(SHOCK, max_impact);
+					}
 			}
 		}
 }
@@ -229,7 +216,7 @@ void opening_detection()
 	//Serial.println(lightSensorValue);
 	//return;
 
-	if ((lightSensorValue > LIGHT_THR) && (millis() - light_debounce_start > LIGHT_DEBOUNCE_MS)) {
+	if ((lightSensorValue > light_thr) && (millis() - light_debounce_start > LIGHT_DEBOUNCE_MS)) {
 			dbg_print_P(PSTR("Light THR exceded!\n"));
 			light_debounce_start = millis();
 			if ( is_connection_established() == 1 )
@@ -249,17 +236,22 @@ void opening_detection()
 						dbg_print_P(PSTR("Error writing accel z\n"));
 
 			}else{
-					dbg_print_P(PSTR("gprs SEND ---->\n"));
-					sbi(data_2_send,OPEN_ALARM);
+			        if(push_enabled == FALSE ){
+					    dbg_print_P(PSTR("gprs SEND ---->\n"));
+					    sbi(data_2_send,OPEN_ALARM);
+			        }else{
+					    dbg_print_P(PSTR("EEPROM LOG -->\n"));
+					    store_data_event_eeprom(OPEN, 0);			        
+			        }
 			}
-
 	}
 }
 
 void loop() 
 {
 	LIS3DH_task();
-	opening_detection();
+	//opening_detection();
 	ble_task();
 	SIM908_task();
+	//export_log();
 }

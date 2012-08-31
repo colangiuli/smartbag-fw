@@ -159,6 +159,12 @@
             <!-- handle 56 = 0x17 -->
             <value length="2" />
         </characteristic>
+        <!-- open-->
+        <characteristic uuid="F405">
+            <properties read="true" indicate="true" />
+            <!-- handle 59 = 0x17 -->
+            <value length="2" />
+        </characteristic>
     </service>
 
 </configuration>

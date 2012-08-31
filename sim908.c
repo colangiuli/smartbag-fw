@@ -142,7 +142,7 @@ void SIM908_init(){
      count = SIM908_send_at_P(PSTR("AT+CGPSOUT=0\r"));      
      sim908_read_and_parse(SHORT_TOUT);
      //
-     count = SIM908_send_at_P(PSTR("AT+CNETLIGHT=0\r"));      
+     count = SIM908_send_at_P(PSTR("AT+CNETLIGHT=1\r"));      
      sim908_read_and_parse(SHORT_TOUT);
      //save current settings
 	 count = SIM908_send_at_P(PSTR("AT&W\r"));
@@ -1155,7 +1155,7 @@ int SIM908_send_pos_2_cloud()
     int result_value = 0;
     //{"imei": "013043001522278","position": ["2012-04-14 12:20:30", "dddddddd", "ddddddddd", "SSS"]}
     char position_txt[100];
-    sprintf_P(position_txt,PSTR("{\"imei\": \"%s\",\"position\": [[\"20%d-%d-%d %d:%d:%d\", \"%ld\", \"%ld\", \"%u\"]]}"),IMEI, year, month, day, hour, minute, second, latitude, longitude, groundspeed); 
+    sprintf_P(position_txt,PSTR("{\"imei\": \"%s\",\"push\": 1,\"position\": [[\"20%d-%d-%d %d:%d:%d\", \"%ld\", \"%ld\", \"%u\"]]}"),IMEI, year, month, day, hour, minute, second, latitude, longitude, groundspeed); 
     result_value = SIM908_cloud_send(position_txt);
     return result_value;
 }
@@ -1168,7 +1168,8 @@ int SIM908_send_open_2_cloud()
 {
     int result_value = 0;
     char msg_txt[100];
-    sprintf_P(msg_txt,PSTR("{\"imei\": \"%s\",\"opening\": [\"20%d-%d-%d %d:%d:%d\"]}"),IMEI, year, month, day, hour, minute, second); 
+    //\"push\": 1
+    sprintf_P(msg_txt,PSTR("{\"imei\": \"%s\",\"push\": 1,\"opening\": [\"20%d-%d-%d %d:%d:%d\"]}"),IMEI, year, month, day, hour, minute, second); 
     result_value = SIM908_cloud_send(msg_txt);
     return result_value;
 }
@@ -1181,7 +1182,7 @@ int SIM908_send_move_2_cloud()
 {
     int result_value = 0;
     char msg_txt[100];
-    sprintf_P(msg_txt,PSTR("{\"imei\": \"%s\",\"move\": [\"20%d-%d-%d %d:%d:%d\"]}"),IMEI, year, month, day, hour, minute, second); 
+    sprintf_P(msg_txt,PSTR("{\"imei\": \"%s\",\"push\": 1,\"move\": [\"20%d-%d-%d %d:%d:%d\"]}"),IMEI, year, month, day, hour, minute, second); 
     result_value = SIM908_cloud_send(msg_txt);
     return result_value;
 }
@@ -1201,7 +1202,7 @@ int SIM908_send_impact_2_cloud()
 	if (lis_z > max_impact)
 		max_impact = lis_z;
 	
-    sprintf_P(msg_txt,PSTR("{\"imei\": \"%s\",\"handling\": [[%d, \"20%d-%d-%d %d:%d:%d\"]]}"),IMEI, max_impact, year, month, day, hour, minute, second); 
+    sprintf_P(msg_txt,PSTR("{\"imei\": \"%s\",\"push\": 1,\"handling\": [[%d, \"20%d-%d-%d %d:%d:%d\"]]}"),IMEI, max_impact, year, month, day, hour, minute, second); 
     result_value = SIM908_cloud_send(msg_txt);
     return result_value;
 }
@@ -1231,7 +1232,7 @@ int SIM908_send_cell_data_2_cloud()
     
       ////////////////// MESSAGE SIZE///////////////////////////
 	  
-      msg_size += sprintf_P(msg_txt,PSTR("{\"imei\": \"%s\", "), IMEI );    
+      msg_size += sprintf_P(msg_txt,PSTR("{\"imei\": \"%s\",\"push\": 1, "), IMEI );    
       msg_size += sprintf_P(msg_txt,PSTR("\"celldata\": [\"20%d-%d-%d %d:%d:%d\", ["), year, month, day, hour, minute, second );    
       for (i = 0; i <=5; i++){
           msg_size += sprintf_P(msg_txt,PSTR("[%u,%u,%u,%u,%u],"), cellid[i], mcc[i], mnc[i], lac[i], rxl[i] );

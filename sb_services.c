@@ -4,13 +4,17 @@
 extern struct postponed_events postponed_events_s;
 extern SC16IS7X0 BG_UART;
 
+
+
+volatile int8_t evaluated_rssi;
+volatile int8_t rssi_threshold = -90;
+volatile int debounce_idx, debounced_rssi;
+
 int8_t get_rssi_threshold()
 {
-	return -90;
+	return rssi_threshold;
 }
 
-volatile int8_t evaluated_rssi, rssi_threshold;
-volatile int debounce_idx, debounced_rssi;
 uint8_t is_in_proximity()
 {
 	uint8_t rssi;

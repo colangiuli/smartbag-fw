@@ -8,6 +8,9 @@
 #define BLINK_GREEN 2
 #define BLINK_ORANGE 3
 
+#define FALSE 1
+#define TRUE 0
+
 #define ON 1
 #define OFF 0
 

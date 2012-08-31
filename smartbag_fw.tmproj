@@ -3,20 +3,20 @@
 <plist version="1.0">
 <dict>
 	<key>currentDocument</key>
-	<string>../../ble112/ANALISI/gsm cell location.txt</string>
+	<string>eeprom_store.c</string>
 	<key>documents</key>
 	<array>
 		<dict>
 			<key>filename</key>
 			<string>main.c</string>
 			<key>lastUsed</key>
-			<date>2012-08-29T10:12:08Z</date>
+			<date>2012-08-31T16:21:09Z</date>
 		</dict>
 		<dict>
 			<key>filename</key>
 			<string>utils.c</string>
 			<key>lastUsed</key>
-			<date>2012-08-26T09:51:07Z</date>
+			<date>2012-08-30T18:15:07Z</date>
 		</dict>
 		<dict>
 			<key>filename</key>
@@ -25,10 +25,14 @@
 		<dict>
 			<key>filename</key>
 			<string>sb_services.c</string>
+			<key>lastUsed</key>
+			<date>2012-08-31T15:54:27Z</date>
 		</dict>
 		<dict>
 			<key>filename</key>
 			<string>sb_services.h</string>
+			<key>lastUsed</key>
+			<date>2012-08-31T15:48:08Z</date>
 		</dict>
 		<dict>
 			<key>filename</key>
@@ -44,19 +48,17 @@
 			<key>filename</key>
 			<string>sim908.c</string>
 			<key>lastUsed</key>
-			<date>2012-08-29T13:18:19Z</date>
+			<date>2012-08-31T15:36:45Z</date>
 		</dict>
 		<dict>
 			<key>filename</key>
 			<string>SIM908.h</string>
 			<key>lastUsed</key>
-			<date>2012-08-29T10:12:07Z</date>
+			<date>2012-08-31T13:22:55Z</date>
 		</dict>
 		<dict>
 			<key>filename</key>
 			<string>I2C.c</string>
-			<key>selected</key>
-			<true/>
 		</dict>
 		<dict>
 			<key>filename</key>
@@ -68,15 +70,33 @@
 		</dict>
 		<dict>
 			<key>filename</key>
+			<string>eeprom_store.c</string>
+			<key>lastUsed</key>
+			<date>2012-08-31T16:21:09Z</date>
+			<key>selected</key>
+			<true/>
+		</dict>
+		<dict>
+			<key>filename</key>
+			<string>eeprom_store.h</string>
+			<key>lastUsed</key>
+			<date>2012-08-31T16:04:19Z</date>
+		</dict>
+		<dict>
+			<key>filename</key>
 			<string>LIS3DH.h</string>
 		</dict>
 		<dict>
 			<key>filename</key>
 			<string>BG_serial.c</string>
+			<key>lastUsed</key>
+			<date>2012-08-31T16:08:47Z</date>
 		</dict>
 		<dict>
 			<key>filename</key>
 			<string>BG_serial.h</string>
+			<key>lastUsed</key>
+			<date>2012-08-31T16:06:53Z</date>
 		</dict>
 		<dict>
 			<key>children</key>
@@ -85,7 +105,7 @@
 					<key>filename</key>
 					<string>../../ble112/ANALISI/todo.txt</string>
 					<key>lastUsed</key>
-					<date>2012-08-29T10:12:09Z</date>
+					<date>2012-08-31T10:05:51Z</date>
 				</dict>
 				<dict>
 					<key>filename</key>
@@ -115,7 +135,7 @@
 					<key>filename</key>
 					<string>../../ble112/ANALISI/gsm cell location.txt</string>
 					<key>lastUsed</key>
-					<date>2012-08-29T13:18:19Z</date>
+					<date>2012-08-31T15:41:46Z</date>
 				</dict>
 			</array>
 			<key>expanded</key>
@@ -141,14 +161,158 @@
 			<key>caret</key>
 			<dict>
 				<key>column</key>
-				<integer>34</integer>
+				<integer>37</integer>
 				<key>line</key>
-				<integer>59</integer>
+				<integer>73</integer>
 			</dict>
 			<key>firstVisibleColumn</key>
 			<integer>0</integer>
 			<key>firstVisibleLine</key>
-			<integer>26</integer>
+			<integer>5</integer>
+		</dict>
+		<key>BG_serial.c</key>
+		<dict>
+			<key>caret</key>
+			<dict>
+				<key>column</key>
+				<integer>53</integer>
+				<key>line</key>
+				<integer>650</integer>
+			</dict>
+			<key>firstVisibleColumn</key>
+			<integer>0</integer>
+			<key>firstVisibleLine</key>
+			<integer>603</integer>
+		</dict>
+		<key>BG_serial.h</key>
+		<dict>
+			<key>caret</key>
+			<dict>
+				<key>column</key>
+				<integer>0</integer>
+				<key>line</key>
+				<integer>35</integer>
+			</dict>
+			<key>columnSelection</key>
+			<false/>
+			<key>firstVisibleColumn</key>
+			<integer>0</integer>
+			<key>firstVisibleLine</key>
+			<integer>0</integer>
+			<key>selectFrom</key>
+			<dict>
+				<key>column</key>
+				<integer>26</integer>
+				<key>line</key>
+				<integer>38</integer>
+			</dict>
+			<key>selectTo</key>
+			<dict>
+				<key>column</key>
+				<integer>0</integer>
+				<key>line</key>
+				<integer>35</integer>
+			</dict>
+		</dict>
+		<key>SIM908.h</key>
+		<dict>
+			<key>caret</key>
+			<dict>
+				<key>column</key>
+				<integer>0</integer>
+				<key>line</key>
+				<integer>67</integer>
+			</dict>
+			<key>firstVisibleColumn</key>
+			<integer>0</integer>
+			<key>firstVisibleLine</key>
+			<integer>18</integer>
+		</dict>
+		<key>eeprom_store.c</key>
+		<dict>
+			<key>caret</key>
+			<dict>
+				<key>column</key>
+				<integer>0</integer>
+				<key>line</key>
+				<integer>0</integer>
+			</dict>
+			<key>firstVisibleColumn</key>
+			<integer>0</integer>
+			<key>firstVisibleLine</key>
+			<integer>0</integer>
+		</dict>
+		<key>eeprom_store.h</key>
+		<dict>
+			<key>caret</key>
+			<dict>
+				<key>column</key>
+				<integer>0</integer>
+				<key>line</key>
+				<integer>12</integer>
+			</dict>
+			<key>columnSelection</key>
+			<false/>
+			<key>firstVisibleColumn</key>
+			<integer>0</integer>
+			<key>firstVisibleLine</key>
+			<integer>0</integer>
+			<key>selectFrom</key>
+			<dict>
+				<key>column</key>
+				<integer>23</integer>
+				<key>line</key>
+				<integer>17</integer>
+			</dict>
+			<key>selectTo</key>
+			<dict>
+				<key>column</key>
+				<integer>0</integer>
+				<key>line</key>
+				<integer>12</integer>
+			</dict>
+		</dict>
+		<key>main.c</key>
+		<dict>
+			<key>caret</key>
+			<dict>
+				<key>column</key>
+				<integer>17</integer>
+				<key>line</key>
+				<integer>70</integer>
+			</dict>
+			<key>firstVisibleColumn</key>
+			<integer>0</integer>
+			<key>firstVisibleLine</key>
+			<integer>57</integer>
+		</dict>
+		<key>sb_services.c</key>
+		<dict>
+			<key>caret</key>
+			<dict>
+				<key>column</key>
+				<integer>37</integer>
+				<key>line</key>
+				<integer>9</integer>
+			</dict>
+			<key>firstVisibleColumn</key>
+			<integer>0</integer>
+			<key>firstVisibleLine</key>
+			<integer>0</integer>
+		</dict>
+		<key>sb_services.h</key>
+		<dict>
+			<key>caret</key>
+			<dict>
+				<key>column</key>
+				<integer>0</integer>
+				<key>line</key>
+				<integer>0</integer>
+			</dict>
+			<key>firstVisibleColumn</key>
+			<integer>0</integer>
+			<key>firstVisibleLine</key>
+			<integer>0</integer>
 		</dict>
 		<key>sim908.c</key>
 		<dict>
@@ -157,22 +321,61 @@
 				<key>column</key>
 				<integer>0</integer>
 				<key>line</key>
-				<integer>1162</integer>
+				<integer>46</integer>
+			</dict>
+			<key>columnSelection</key>
+			<false/>
+			<key>firstVisibleColumn</key>
+			<integer>0</integer>
+			<key>firstVisibleLine</key>
+			<integer>0</integer>
+			<key>selectFrom</key>
+			<dict>
+				<key>column</key>
+				<integer>18</integer>
+				<key>line</key>
+				<integer>46</integer>
+			</dict>
+			<key>selectTo</key>
+			<dict>
+				<key>column</key>
+				<integer>0</integer>
+				<key>line</key>
+				<integer>46</integer>
+			</dict>
+		</dict>
+		<key>utils.c</key>
+		<dict>
+			<key>caret</key>
+			<dict>
+				<key>column</key>
+				<integer>78</integer>
+				<key>line</key>
+				<integer>79</integer>
 			</dict>
 			<key>firstVisibleColumn</key>
 			<integer>0</integer>
 			<key>firstVisibleLine</key>
-			<integer>1212</integer>
+			<integer>0</integer>
 		</dict>
 	</dict>
 	<key>openDocuments</key>
 	<array>
 		<string>../../ble112/ANALISI/gsm cell location.txt</string>
 		<string>sim908.c</string>
+		<string>sb_services.h</string>
+		<string>SIM908.h</string>
+		<string>main.c</string>
+		<string>BG_serial.c</string>
+		<string>eeprom_store.c</string>
+		<string>BG_serial.h</string>
+		<string>eeprom_store.h</string>
+		<string>sb_services.c</string>
+		<string>utils.c</string>
 	</array>
 	<key>showFileHierarchyDrawer</key>
 	<true/>
 	<key>windowFrame</key>
-	<string>{{419, 338}, {1987, 1080}}</string>
+	<string>{{466, 338}, {1987, 1080}}</string>
 </dict>
 </plist>

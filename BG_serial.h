@@ -18,6 +18,27 @@
 #define BLE_FIELD_SIZE	2
 
 
+/************** HANDLEs *********************/
+#define SHOCK_SERVICE_HANDLE 15
+#define LIGHT_SERVICE_HANDLE 19
+#define IMMEDIATE_ALERT_HANDLE 23
+#define OP_MODE_HANDLE 27
+#define FREEZE_MODE_HANDLE 30
+#define BATTERY_LEVEL_HANDLE 33
+#define TX_POWER_LEVEL_HANDLE 37
+
+//debug service
+#define DEBUG_MSG_HANDLE 40
+#define ACCEL_XYZ_HANDLE 43
+#define GPS_LONG_LAT_SPEED_HANDLE 46
+
+//threshold service
+#define MOVE_THR_HANDLE 50
+#define SHOCK_THR_HANDLE 53
+#define RSSI_THR_HANDLE 56
+#define OPEN_THR_HANDLE 59
+
+
 
 #define BG_CLASS_ATTRIBUTE_DB		0x02
 

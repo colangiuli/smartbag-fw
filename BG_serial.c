@@ -19,12 +19,14 @@
 #include "SC16IS7X0.h"
 #include <avr/pgmspace.h>
 #include "utils.h"
+#include "eeprom_store.h"
 
 SC16IS7X0 BG_UART;
 
 
 int BG_sapi_read_parse(/*int fd,*/ struct ble_pkt *pkt);
 
+extern uint8_t move_enabled, push_enabled;
 
 // Packet description
 
@@ -606,11 +608,51 @@ int event_handle_user_request(unsigned char *payload)
     
 }
 
+
 // Connected device has written to an attribute.
 int event_handle_value_notification(unsigned char *payload, uint8_t size)
 {
-    // NO ACTIONS AT THIS TIME
+    uint16_t written_handle;
+    
+    written_handle = payload[2] + (payload[3] << 8);
+        
+    if ( written_handle == FREEZE_MODE_HANDLE ){
+        move_enabled = payload[6];
+        // Save to EEPROM
+        eeprom_save_freeze_mode();
+    }
+    
+    if ( written_handle == OP_MODE_HANDLE ) {
+        push_enabled = payload[6];   
+        // Save to EEPROM
+        eeprom_save_op_mode();
+    }
     return 0;    
+    if ( written_handle == RSSI_THR_HANDLE ) {
+        push_enabled = payload[6];   
+        // Save to EEPROM
+        eeprom_save_rssi_thr();
+    }
+    return 0;
+    /////
+    if ( written_handle == MOVE_THR_HANDLE ) {
+        push_enabled = payload[6] + (payload[7] << 8);   
+        // Save to EEPROM
+        eeprom_save_move_thr();
+    }
+    return 0;
+    if ( written_handle == SHOCK_THR_HANDLE ) {
+        push_enabled = payload[6] + (payload[7] << 8);   
+        // Save to EEPROM
+        eeprom_save_shock_thr();
+    }
+    return 0;
+    if ( written_handle == OPEN_THR_HANDLE ) {
+        push_enabled = payload[6] + (payload[7] << 8);   
+        // Save to EEPROM
+        eeprom_save_open_thr();
+    }
+    return 0;
     
 }
 
