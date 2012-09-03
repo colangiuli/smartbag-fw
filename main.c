@@ -247,6 +247,9 @@ void opening_detection()
 	}
 }
 
+uint8_t red_led_status = LOW;
+uint8_t green_led_status = LOW;
+
 void loop() 
 {
 	LIS3DH_task();
@@ -254,4 +257,17 @@ void loop()
 	ble_task();
 	SIM908_task();
 	//export_log();
+	if (BATT_level <= 20){
+	    if (red_led_status == LOW){
+	        digitalWrite(RED_LED, HIGH); 
+	    }else{
+	        digitalWrite(RED_LED, LOW); 
+	    }  
+	}
+	if (green_led_status == LOW){
+        digitalWrite(GREEN_LED, HIGH); 
+    }else{
+        digitalWrite(GREEN_LED, LOW); 
+    }
+	
 }

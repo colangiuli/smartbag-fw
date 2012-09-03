@@ -465,6 +465,7 @@ int8_t sim908_read_and_parse(uint16_t tout_ms)
 		    if (waiting_connection == TRUE){ 		
                 waiting_connection = FALSE;
                 waiting_response = FALSE;
+                blinkLed(BLINK_RED, 5, 300);
 			    return FAILURE;
 		    }
 		}		
@@ -494,6 +495,7 @@ int8_t sim908_read_and_parse(uint16_t tout_ms)
 		if ( p_char != NULL){		
     	    if (waiting_response == TRUE){ 		
                 waiting_response = FALSE;
+                blinkLed(BLINK_RED, 5, 300);
     		    return FAILURE;
     	    }
 		}		
@@ -565,12 +567,15 @@ void SIM908_parse_battery_status(char *batt_status)
 	  {
 		case NOT_CHARGING:
 					dbg_print_P(PSTR("BATT IS NOT_CHARGING"));
+					digitalWrite(RED_LED, LOW);
 					break;
 		case CHARGING:
 					dbg_print_P(PSTR("BATT IS CHARGING"));
+					digitalWrite(RED_LED, HIGH); 
 					break;
 		case CHARGE_FINISCED:
 					dbg_print_P(PSTR("BATT CHARGE FINISCED"));
+					digitalWrite(RED_LED, LOW); 
 					break;
 	}
 	dbg_print_P(PSTR("BATT LVL IS: "));
@@ -747,19 +752,22 @@ void SIM908_power(uint8_t state)
 
 void SIM908_GPS_power(uint8_t state)
 {
-	if (state == ON)
+	if ((state == ON) && (GPS_status == OFF))
 	{
 		SIM908_send_at_P(PSTR("AT+CGPSPWR=1\r"));
 	}else{
 		SIM908_send_at_P(PSTR("AT+CGPSPWR=0\r"));
+        GPS_status = ON;
+        fix_status = FIX_NOT_VALID;
 	}
 	
 	sim908_read_and_parse(SHORT_TOUT);
 	
-	if (state == ON)
+	if ((state == OFF) && (GPS_status == ON))
 	{
 		SIM908_send_at_P(PSTR("AT+CGPSRST=1\r"));
 		sim908_read_and_parse(SHORT_TOUT);
+        GPS_status = OFF;
 	}
 }
 

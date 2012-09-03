@@ -119,20 +119,20 @@
         <description>Debug service</description>
 		<!-- message-->
         <characteristic uuid="F302">
-            <properties read="true" indicate="true" />
+            <properties read="true" notify="true" />
             <!-- handle 40 = 0x17 -->
             <value length="100" />
         </characteristic>
 		<!-- Accel XYZ-->
         <characteristic uuid="F303">
-            <properties read="true" indicate="true" />
+            <properties read="true" notify="true" />
             <!-- handle 43 = 0x17 -->
             <value length="4" />
         </characteristic>
 
 		<!-- GPS 4LONG 4LAT 2SPEED-->
         <characteristic uuid="F304">
-            <properties read="true" indicate="true" />
+            <properties read="true" notify="true" />
             <!-- handle 46 = 0x17 -->
             <value length="10" />
         </characteristic>
@@ -143,28 +143,47 @@
         <description>threshold service</description>
 		<!-- move-->
         <characteristic uuid="F402">
-            <properties read="true" indicate="true" />
+            <properties read="true" write="true" />
             <!-- handle 50 = 0x17 -->
             <value length="2" />
         </characteristic>
 		<!-- shock-->
         <characteristic uuid="F403">
-            <properties read="true" indicate="true" />
-            <!-- handle 53 = 0x17 -->
+            <properties read="true" write="true" />
+            <!-- handle 52 = 0x17 -->
             <value length="2" />
         </characteristic>
         <!-- rssi-->
-        <characteristic uuid="F405">
-            <properties read="true" indicate="true" />
-            <!-- handle 56 = 0x17 -->
+        <characteristic uuid="F404">
+            <properties read="true" write="true" />
+            <!-- handle 54 = 0x17 -->
             <value length="2" />
         </characteristic>
         <!-- open-->
         <characteristic uuid="F405">
-            <properties read="true" indicate="true" />
-            <!-- handle 59 = 0x17 -->
+            <properties read="true" write="true" />
+            <!-- handle 56 = 0x17 -->
             <value length="2" />
         </characteristic>
     </service>
 
+    <!-- transfer stored service -->    
+    <service uuid="F501">
+        <!-- Stored shocks transfers -->
+        <characteristic uuid="F502">
+            <properties read="true" indicate="true" />
+            <!-- handle 59 -->
+            <!-- example 50g 15/11/83 19:00 is 501511831900 -->
+            <value length="6"/>        
+        </characteristic>
+        
+        <!-- Stored opening transfers -->
+        <characteristic uuid="F503">
+            <properties read="true" indicate="true" />
+            <!-- handle 62 -->
+            <!-- example opening 15/11/83 19:00 is 011511831900 -->
+            <value length="6" />        
+        </characteristic>
+    </service>
+    
 </configuration>

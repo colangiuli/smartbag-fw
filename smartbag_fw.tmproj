@@ -3,7 +3,7 @@
 <plist version="1.0">
 <dict>
 	<key>currentDocument</key>
-	<string>eeprom_store.c</string>
+	<string>../../ble112/ANALISI/todo.txt</string>
 	<key>documents</key>
 	<array>
 		<dict>
@@ -72,9 +72,7 @@
 			<key>filename</key>
 			<string>eeprom_store.c</string>
 			<key>lastUsed</key>
-			<date>2012-08-31T16:21:09Z</date>
-			<key>selected</key>
-			<true/>
+			<date>2012-08-31T16:29:01Z</date>
 		</dict>
 		<dict>
 			<key>filename</key>
@@ -105,7 +103,9 @@
 					<key>filename</key>
 					<string>../../ble112/ANALISI/todo.txt</string>
 					<key>lastUsed</key>
-					<date>2012-08-31T10:05:51Z</date>
+					<date>2012-08-31T16:29:01Z</date>
+					<key>selected</key>
+					<true/>
 				</dict>
 				<dict>
 					<key>filename</key>
@@ -169,6 +169,20 @@
 			<integer>0</integer>
 			<key>firstVisibleLine</key>
 			<integer>5</integer>
+		</dict>
+		<key>../../ble112/ANALISI/todo.txt</key>
+		<dict>
+			<key>caret</key>
+			<dict>
+				<key>column</key>
+				<integer>0</integer>
+				<key>line</key>
+				<integer>0</integer>
+			</dict>
+			<key>firstVisibleColumn</key>
+			<integer>0</integer>
+			<key>firstVisibleLine</key>
+			<integer>0</integer>
 		</dict>
 		<key>BG_serial.c</key>
 		<dict>
@@ -368,6 +382,7 @@
 		<string>main.c</string>
 		<string>BG_serial.c</string>
 		<string>eeprom_store.c</string>
+		<string>../../ble112/ANALISI/todo.txt</string>
 		<string>BG_serial.h</string>
 		<string>eeprom_store.h</string>
 		<string>sb_services.c</string>

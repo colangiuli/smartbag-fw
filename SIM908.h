@@ -25,6 +25,7 @@
 #define OPEN_ALARM 1
 #define POSITION 2
 #define IMPACT_ALARM 3
+#define CELL_DATA 4
 
 //battery related defines
 #define NOT_CHARGING 0
