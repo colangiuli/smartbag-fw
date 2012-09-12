@@ -45,6 +45,14 @@ void init_eeprom(){
          accel_thr_impact  = 1000;
          rssi_threshold = -90;
          light_thr  = 100;
+
+		 eeprom_save_op_mode();
+		 eeprom_save_freeze_mode();
+		 eeprom_save_move_thr();
+		 eeprom_save_shock_thr();
+		 eeprom_save_rssi_thr();
+		 eeprom_save_open_thr();
+
      }else{     
 		 dbg_print_P(PSTR("READ SETT. FROM EEPROM"));
          push_enabled  = eeprom_read_byte((uint8_t *)OP_MODE_EEPROM_ADDR);

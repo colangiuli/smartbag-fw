@@ -11,7 +11,6 @@
 		-magari si potrebbe ricevere la data esatta dall'iphone o meglio ancora da internet...
 		-bisogna calcolare il tempo trascorso dall'ultimo aggiornamento e aggiornare la data di conseguenza prima di inviarla negli alert
 	
-	inviare i dati della batt tramite BT
 	
 	convertire strstr in strstr_P
 	gestire la ricezione dell'ok o dell'eventuale error (se non ricevo ne uno ne l'altro probabilmente il modulo e' spento)	
@@ -151,24 +150,25 @@ void SIM908_init(){
 	 count = SIM908_send_at_P(PSTR("AT+CCLK?\r"));
 	 sim908_read_and_parse(SHORT_TOUT);       
      
-     startTime = millis();
-     //SIM908_go_to_sleep();
-     //delay(10000);
-     
      //get serial number
      //AT+CGSN
      count = SIM908_send_at_P(PSTR("AT+CGSN\r"));
      sim908_read_line(read_buffer, 100, SHORT_TOUT);
      result = sim908_read_line(read_buffer, 100, SHORT_TOUT);
-     //now response will contain the IMEI
+     
+	 //strcpy(IMEI, "86100100065142"); 
+	 //now response will contain the IMEI
      if (result >= 0){
         strncpy(IMEI,read_buffer,19);
-        IMEI[14] = 0;
+        IMEI[15] = 0;
         //Serial.print("imei is: ");
         //Serial.println(IMEI);
      }
 	 sim908_read_and_parse(SHORT_TOUT);
      
+	  startTime = millis();
+     //SIM908_go_to_sleep();
+     //delay(10000);
 }
 
 

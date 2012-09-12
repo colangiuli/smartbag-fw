@@ -35,12 +35,14 @@ uint16_t accel_thr_impact = 1000;
 uint16_t light_thr = 100;
 
 char received[64], numchar;
+unsigned long ledDelay;
 
 extern SC16IS7X0 BG_UART;
 extern uint8_t data_2_send;
 extern uint8_t hour, minute, second, year, month, day;
 extern int8_t  BATT_level;
 LIS3DH lis;
+
 
 void setup();
 void loop();
@@ -50,7 +52,6 @@ void loop();
     //gestire gli stati APERTO / CHIUSO per il sensore di lucw
     
 	in futuro bisogna gestire correttamente gli interrupt dei due convertitore seriale I2C
-	leggere l'op mode tramite BT o comunque gestire se l'iphone mi cambia l'OP mode
 */
 
 void setup()
@@ -66,29 +67,41 @@ void setup()
 
 	blinkLed(BLINK_ORANGE, 5, 500);
   	dbg_print_P(PSTR("START!"));
-  	blinkLed(BLINK_GREEN, 10, 300);
 	
 	// enable LIS3DH
     lis.begin();        
+	blinkLed(BLINK_GREEN, 3, 300);
 
 	SIM908_init();	
+	
+	blinkLed(BLINK_GREEN, 4, 300);
 
 	SIM908_GPS_power(OFF);
 //	delay(1000);
 	SIM908_GPS_power(ON);
 
+	blinkLed(BLINK_GREEN, 5, 300);
+
   	dbg_print_P(PSTR("Init BG ...\n"));
   	BG_sapi_init();
   	delay(3000);
 
+	blinkLed(BLINK_GREEN, 6, 300);
+
 	dbg_print_P(PSTR("set_connection_mode_connectable_discoverable ...\n"));
 	command_status = set_connection_mode_connectable_discoverable();
-	if (command_status != 0 )
+	if (command_status != 0 ){
 		dbg_print_P(PSTR("Error!!!\n"));
-    
+		blinkLed(BLINK_RED, 5, 500);    
+	}
+
+	blinkLed(BLINK_GREEN, 7, 300);
+
 	dbg_print_P(PSTR("READ SETTINGS FROM EEPROM\n"));
 	init_eeprom();
 	
+	ledDelay = millis();
+
     dbg_print_P(PSTR("MAIN LOOP\n"));
 }
 
@@ -257,17 +270,26 @@ void loop()
 	ble_task();
 	SIM908_task();
 	//export_log();
-	if (BATT_level <= 20){
+
+	if (millis() - ledDelay < 1000)
+		return;
+	ledDelay = millis();
+
+	if (BATT_level <= 70){
 	    if (red_led_status == LOW){
 	        digitalWrite(RED_LED, HIGH); 
+			red_led_status = HIGH;
 	    }else{
 	        digitalWrite(RED_LED, LOW); 
+			red_led_status = LOW;
 	    }  
 	}
 	if (green_led_status == LOW){
-        digitalWrite(GREEN_LED, HIGH); 
+        digitalWrite(GREEN_LED, HIGH);
+		green_led_status = HIGH; 
     }else{
         digitalWrite(GREEN_LED, LOW); 
+		green_led_status = LOW;
     }
 	
 }
