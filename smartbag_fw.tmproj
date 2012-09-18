@@ -3,16 +3,14 @@
 <plist version="1.0">
 <dict>
 	<key>currentDocument</key>
-	<string>main.c</string>
+	<string>BG_serial.c</string>
 	<key>documents</key>
 	<array>
 		<dict>
 			<key>filename</key>
 			<string>main.c</string>
 			<key>lastUsed</key>
-			<date>2012-09-06T16:38:54Z</date>
-			<key>selected</key>
-			<true/>
+			<date>2012-09-17T17:02:39Z</date>
 		</dict>
 		<dict>
 			<key>filename</key>
@@ -52,7 +50,7 @@
 			<key>filename</key>
 			<string>sim908.c</string>
 			<key>lastUsed</key>
-			<date>2012-09-03T15:07:46Z</date>
+			<date>2012-09-17T16:31:55Z</date>
 		</dict>
 		<dict>
 			<key>filename</key>
@@ -76,7 +74,7 @@
 			<key>filename</key>
 			<string>eeprom_store.c</string>
 			<key>lastUsed</key>
-			<date>2012-09-06T16:38:54Z</date>
+			<date>2012-09-17T14:29:11Z</date>
 		</dict>
 		<dict>
 			<key>filename</key>
@@ -92,13 +90,15 @@
 			<key>filename</key>
 			<string>BG_serial.c</string>
 			<key>lastUsed</key>
-			<date>2012-08-31T16:08:47Z</date>
+			<date>2012-09-17T17:04:18Z</date>
+			<key>selected</key>
+			<true/>
 		</dict>
 		<dict>
 			<key>filename</key>
 			<string>BG_serial.h</string>
 			<key>lastUsed</key>
-			<date>2012-08-31T16:06:53Z</date>
+			<date>2012-09-17T17:04:18Z</date>
 		</dict>
 		<dict>
 			<key>children</key>
@@ -178,59 +178,137 @@
 			<key>firstVisibleLine</key>
 			<integer>14</integer>
 		</dict>
+		<key>BG_serial.c</key>
+		<dict>
+			<key>caret</key>
+			<dict>
+				<key>column</key>
+				<integer>0</integer>
+				<key>line</key>
+				<integer>740</integer>
+			</dict>
+			<key>firstVisibleColumn</key>
+			<integer>0</integer>
+			<key>firstVisibleLine</key>
+			<integer>706</integer>
+		</dict>
+		<key>BG_serial.h</key>
+		<dict>
+			<key>caret</key>
+			<dict>
+				<key>column</key>
+				<integer>0</integer>
+				<key>line</key>
+				<integer>36</integer>
+			</dict>
+			<key>columnSelection</key>
+			<false/>
+			<key>firstVisibleColumn</key>
+			<integer>0</integer>
+			<key>firstVisibleLine</key>
+			<integer>131</integer>
+			<key>selectFrom</key>
+			<dict>
+				<key>column</key>
+				<integer>27</integer>
+				<key>line</key>
+				<integer>36</integer>
+			</dict>
+			<key>selectTo</key>
+			<dict>
+				<key>column</key>
+				<integer>0</integer>
+				<key>line</key>
+				<integer>36</integer>
+			</dict>
+		</dict>
 		<key>eeprom_store.c</key>
 		<dict>
 			<key>caret</key>
 			<dict>
 				<key>column</key>
-				<integer>31</integer>
+				<integer>0</integer>
 				<key>line</key>
-				<integer>136</integer>
+				<integer>22</integer>
 			</dict>
+			<key>columnSelection</key>
+			<false/>
 			<key>firstVisibleColumn</key>
 			<integer>0</integer>
 			<key>firstVisibleLine</key>
-			<integer>100</integer>
+			<integer>0</integer>
+			<key>selectFrom</key>
+			<dict>
+				<key>column</key>
+				<integer>29</integer>
+				<key>line</key>
+				<integer>28</integer>
+			</dict>
+			<key>selectTo</key>
+			<dict>
+				<key>column</key>
+				<integer>0</integer>
+				<key>line</key>
+				<integer>22</integer>
+			</dict>
 		</dict>
 		<key>main.c</key>
 		<dict>
 			<key>caret</key>
 			<dict>
 				<key>column</key>
-				<integer>0</integer>
+				<integer>35</integer>
 				<key>line</key>
-				<integer>0</integer>
+				<integer>236</integer>
 			</dict>
+			<key>columnSelection</key>
+			<false/>
 			<key>firstVisibleColumn</key>
 			<integer>0</integer>
 			<key>firstVisibleLine</key>
-			<integer>200</integer>
+			<integer>15</integer>
+			<key>selectFrom</key>
+			<dict>
+				<key>column</key>
+				<integer>8</integer>
+				<key>line</key>
+				<integer>236</integer>
+			</dict>
+			<key>selectTo</key>
+			<dict>
+				<key>column</key>
+				<integer>35</integer>
+				<key>line</key>
+				<integer>236</integer>
+			</dict>
 		</dict>
 		<key>sim908.c</key>
 		<dict>
 			<key>caret</key>
 			<dict>
 				<key>column</key>
-				<integer>1</integer>
+				<integer>2</integer>
 				<key>line</key>
-				<integer>12</integer>
+				<integer>14</integer>
 			</dict>
 			<key>firstVisibleColumn</key>
 			<integer>0</integer>
 			<key>firstVisibleLine</key>
-			<integer>0</integer>
+			<integer>29</integer>
 		</dict>
 	</dict>
 	<key>openDocuments</key>
 	<array>
-		<string>sim908.c</string>
 		<string>main.c</string>
+		<string>sim908.c</string>
+		<string>BG_serial.c</string>
+		<string>BG_serial.h</string>
 		<string>eeprom_store.c</string>
 		<string>../../ble112/ANALISI/todo.txt</string>
 	</array>
 	<key>showFileHierarchyDrawer</key>
 	<true/>
 	<key>windowFrame</key>
-	<string>{{420, 448}, {1987, 970}}</string>
+	<string>{{590, 269}, {1638, 1149}}</string>
 </dict>
 </plist>

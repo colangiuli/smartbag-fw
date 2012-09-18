@@ -178,17 +178,19 @@ void LIS3DH_task()
         //<!-- example 50g 15/11/83 19:00 is 50 15 11 83 19 00 -->		
 
 		if ( (lis_x > threshold) || (lis_y > threshold) || (lis_z > threshold) ){
-			dbg_print_P(PSTR("THR exceded!\n"));
+			dbg_print_P(PSTR("THR exceded:"));
 				int16_t max_impact = lis_x;
 
 					if (lis_y > max_impact)
 						max_impact = lis_y;
 					if (lis_z > max_impact)
 						max_impact = lis_z;
-			
+			Serial.print(max_impact);
+			Serial.print("BT STATUS: ");
+            Serial.println(is_connection_established() );
 
-			if ( is_connection_established() == 1 )
-			{
+			if ( is_connection_established() == 1 ) {
+			    
 				dbg_print_P(PSTR("BT SEND ---->\n"));
 				uint8_t message[7];
 					//uint8_t hour, minute, second, year, month, day;

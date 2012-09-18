@@ -10,8 +10,7 @@
 	migliorare la gestione della data,(usare l'RTC)
 		-magari si potrebbe ricevere la data esatta dall'iphone o meglio ancora da internet...
 		-bisogna calcolare il tempo trascorso dall'ultimo aggiornamento e aggiornare la data di conseguenza prima di inviarla negli alert
-	
-	
+
 	convertire strstr in strstr_P
 	gestire la ricezione dell'ok o dell'eventuale error (se non ricevo ne uno ne l'altro probabilmente il modulo e' spento)	
 	migliorare poweron / poweroff del modulo gsm
@@ -25,7 +24,12 @@ extern	int16_t lis_y;
 extern	int16_t lis_z;
 
 // The time, date, location data, etc.
-uint8_t hour, minute, second, year, month, day;
+uint8_t hour = 1;
+uint8_t minute = 1; 
+uint8_t second = 1;
+uint8_t year = 12;
+uint8_t month = 1;
+uint8_t day = 1;
 int32_t latitude, longitude;
 uint8_t groundspeed, trackangle, fix_status;
 uint16_t cellid[7], mcc[7], mnc[7], lac[7]; 
@@ -96,7 +100,7 @@ void SIM908_init(){
    	}
  
 	 delay(5000);
-	
+	 	
 	 //enable hw flow control
 	 count = SIM908_send_at_P(PSTR("AT+IFC=2,2\r"));
      sim908_read_and_parse(SHORT_TOUT);
@@ -284,14 +288,6 @@ void SIM908_task(void)
 		startTime = millis();
 		return;
 	}
-	
-	//we need to update the gps status?
-	//if (time_to_update_gps_status)
-	//{	
-	//	SIM908_send_at_P(PSTR("AT+CGPSSTATUS?\r"));
- 		//read response (we have to wait for the OK)
-	//	sim908_read_and_parse(SHORT_TOUT);
-	//}	
     //SIM908_go_to_sleep();		
 }
 
@@ -1050,9 +1046,12 @@ int SIM908_cloud_send(const char* message){
     result_value = SIM908_cloud_connect();
     if (result_value == FAILURE)
         return FAILURE;
-    SIM908_cloud_send_headers();
-    SIM908_cloud_send_message(message);
-    
+    result_value = SIM908_cloud_send_headers();
+    if (result_value == FAILURE)
+        return FAILURE;
+    result_value = SIM908_cloud_send_message(message);
+    if (result_value == FAILURE)
+        return FAILURE;
     return SUCCESS;
 }
 
@@ -1063,17 +1062,29 @@ int SIM908_cloud_connect()
     
       //add header to packages received
 	  SIM908_send_at_P(PSTR("AT+CIPHEAD=1\r"));
-	  sim908_read_and_parse(SHORT_TOUT);
+	  result_value = sim908_read_and_parse(SHORT_TOUT);
+	  if ((result_value == FAILURE) || (incoming_call == TRUE))
+          return FAILURE;
+          
       SIM908_send_at_P(PSTR("AT+CIPSHUT\r"));
-	  sim908_read_and_parse(SHORT_TOUT);
-	  if (waiting_response == TRUE)
-	    sim908_read_and_parse(SHORT_TOUT);
+	  result_value = sim908_read_and_parse(SHORT_TOUT);
+	  if ((result_value == FAILURE) || (incoming_call == TRUE))
+          return FAILURE;
+	  if (waiting_response == TRUE){
+	    result_value = sim908_read_and_parse(SHORT_TOUT);
+	    if ((result_value == FAILURE) || (incoming_call == TRUE))
+            return FAILURE;
+      }
 	  //set APN            
 	  SIM908_send_at_P(PSTR("AT+CIPCSGP=1,\"ibox.tim.it\"\r")); //this command can answer ok or error
-	  sim908_read_and_parse(SHORT_TOUT);
-	  if (waiting_response == TRUE)
-	    sim908_read_and_parse(SHORT_TOUT);
-
+	  result_value = sim908_read_and_parse(SHORT_TOUT);
+	  if ((result_value == FAILURE) || (incoming_call == TRUE))
+          return FAILURE;
+	  if (waiting_response == TRUE){
+	    result_value = sim908_read_and_parse(SHORT_TOUT);
+        if ((result_value == FAILURE) || (incoming_call == TRUE))
+            return FAILURE;
+      }
 	  SIM908_send_at_P(PSTR("AT+CIPSTART=\"TCP\",\"54.245.111.61\", 80\r"));
 	  //delay(2000);
 
@@ -1099,12 +1110,12 @@ int SIM908_cloud_send_headers(){
 	  //delay(2000);
       waiting_prompt = TRUE;
 	  result_value = sim908_read_and_parse(500);
-	  if (result_value == FAILURE)
+	  if ((result_value == FAILURE) || (incoming_call == TRUE))
           return FAILURE;
   	  if (waiting_prompt == TRUE) {
           //delay(2000);
 	      result_value = sim908_read_and_parse(2000);
-    	  if (result_value == FAILURE)
+    	  if ((result_value == FAILURE) || (incoming_call == TRUE))
               return FAILURE;
 	  }    
 	  
@@ -1231,13 +1242,16 @@ int SIM908_send_cell_data_2_cloud()
     end_c[0]=0x1a;
 	end_c[1]='\0';
 
-    
+	SIM908_send_at_P(PSTR("AT+CENG=1,1\r"));
+	sim908_read_and_parse(SHORT_TOUT);    
+
     result_value = SIM908_cloud_connect();
-    if (result_value == FAILURE)
+    if ((result_value == FAILURE) || (incoming_call == TRUE))
         return FAILURE;
         
-    SIM908_cloud_send_headers();
-    
+    result_value = SIM908_cloud_send_headers();
+    if ((result_value == FAILURE) || (incoming_call == TRUE))
+        return FAILURE;
       ////////////////// MESSAGE SIZE///////////////////////////
 	  
       msg_size += sprintf_P(msg_txt,PSTR("{\"imei\": \"%s\",\"push\": 1, "), IMEI );    
@@ -1296,7 +1310,9 @@ void SIM908_send_gprs_data()
 {
     int result_value = 0;
 		//dbg_print_P(PSTR("SENDING ALARM THOUGHT GPRS\n"));
-
+	    if  (incoming_call == TRUE)
+          return;
+        
 		if(CHECKBIT(data_2_send,MOVE_ALARM))
 		{
             result_value = SIM908_send_move_2_cloud();
@@ -1601,9 +1617,9 @@ void SIM908_parse_gsm_cell_data(char *message)
     	if (p_start_char == NULL) 
     		return;
     	*p_end_char = 0;	
-    	lac[celln] = atol(p_start_char);	
+		lac[celln] = strtol(p_start_char, &p_end_char, 16);	
 
-    		     
+    		 
         //ta				255
 	    //servirebbe ma e' nullo
 	    
@@ -1668,7 +1684,8 @@ void SIM908_parse_gsm_cell_data(char *message)
     	if (p_start_char == NULL) 
     		return;
     	*p_end_char = 0;	
-    	lac[celln] = atol(p_start_char);		        
+		lac[celln] = strtol(p_start_char, &p_end_char, 16);
+		        
 	    }
     
 }

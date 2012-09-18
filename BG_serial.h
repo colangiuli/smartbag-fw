@@ -34,9 +34,9 @@
 
 //threshold service
 #define MOVE_THR_HANDLE 50
-#define SHOCK_THR_HANDLE 53
-#define RSSI_THR_HANDLE 56
-#define OPEN_THR_HANDLE 59
+#define SHOCK_THR_HANDLE 52
+#define RSSI_THR_HANDLE 54
+#define OPEN_THR_HANDLE 56
 
 
 
@@ -133,7 +133,7 @@ enum event_type_enum {CONNECTION_EVENT = 1, DISCONNECTION_EVENT = 2, USER_REQUES
 struct postponed_events{
 	uint8_t event_type;
 	char user_request_event_payload[3];
-	// event_handle_value_notification no datas
+	char event_handle_value_notification[6];
 	// event_handle_conn_status no datas
 	// event_handle_disconnection no datas
 

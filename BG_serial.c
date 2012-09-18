@@ -26,7 +26,14 @@ SC16IS7X0 BG_UART;
 
 int BG_sapi_read_parse(/*int fd,*/ struct ble_pkt *pkt);
 
-extern uint8_t move_enabled, push_enabled;
+
+extern uint8_t hour, minute, second, year, month, day;
+extern uint8_t move_enabled;
+extern uint8_t push_enabled;
+extern uint16_t accel_thr_move;
+extern uint16_t accel_thr_impact;
+extern uint16_t light_thr;
+extern int8_t rssi_threshold;
 
 // Packet description
 
@@ -614,46 +621,64 @@ int event_handle_value_notification(unsigned char *payload, uint8_t size)
 {
     uint16_t written_handle;
     
-    written_handle = payload[2] + (payload[3] << 8);
+    //written_handle = payload[2] + (payload[3] << 8);
+    memcpy(&written_handle, (uint8_t *)&payload[2], 2);	
+    
+    Serial.print("WRITTEN HANDLE: ");
+    Serial.println(written_handle);
+    Serial.print("P[2]: ");
+    Serial.println(payload[2]);   
+    Serial.print("P[3]: ");
+    Serial.println(payload[3]);
         
     if ( written_handle == FREEZE_MODE_HANDLE ){
         move_enabled = payload[6];
         // Save to EEPROM
         eeprom_save_freeze_mode();
+        return 0; 
     }
     
     if ( written_handle == OP_MODE_HANDLE ) {
         push_enabled = payload[6];   
         // Save to EEPROM
         eeprom_save_op_mode();
+        return 0;  
     }
-    return 0;    
+      
     if ( written_handle == RSSI_THR_HANDLE ) {
-        push_enabled = payload[6];   
+        rssi_threshold = payload[6];   
         // Save to EEPROM
         eeprom_save_rssi_thr();
+        return 0;
     }
-    return 0;
+    
     /////
     if ( written_handle == MOVE_THR_HANDLE ) {
-        push_enabled = payload[6] + (payload[7] << 8);   
+        //accel_thr_move = payload[6] + (payload[7] << 8);   
+        memcpy(&accel_thr_move, (uint8_t *)&payload[7], 2);
         // Save to EEPROM
         eeprom_save_move_thr();
+        return 0;
     }
-    return 0;
-    if ( written_handle == SHOCK_THR_HANDLE ) {
-        push_enabled = payload[6] + (payload[7] << 8);   
-        // Save to EEPROM
-        eeprom_save_shock_thr();
-    }
-    return 0;
-    if ( written_handle == OPEN_THR_HANDLE ) {
-        push_enabled = payload[6] + (payload[7] << 8);   
-        // Save to EEPROM
-        eeprom_save_open_thr();
-    }
-    return 0;
     
+    if ( written_handle == SHOCK_THR_HANDLE ) {
+        memcpy(&accel_thr_impact, (uint8_t *)&payload[7], 2);	
+        //accel_thr_impact = payload[6] + (payload[7] << 8);   
+        // Save to EEPROM
+        Serial.print("NEW SHOCK THR IS: ");
+        Serial.println(accel_thr_impact);
+        eeprom_save_shock_thr();
+        return 0;
+    }
+    
+    if ( written_handle == OPEN_THR_HANDLE ) {
+        //light_thr = payload[6] + (payload[7] << 8);   
+        memcpy(&light_thr, (uint8_t *)&payload[7], 2);
+        // Save to EEPROM
+        eeprom_save_open_thr();     
+    }
+    
+    return 0;
 }
 
 int event_handle_conn_status(unsigned char *payload)
@@ -703,10 +728,15 @@ int event_handler(struct ble_pkt *incoming_packet, short postponed)
     // Client writes an attribute's value
     if ( IS_ATTRIBUTE_WRITTEN(incoming_packet) ){
 		if (postponed){
+		     dbg_print_P(PSTR("WRITE EVT POSTPONED\n"));
+		     Serial.print("CONN IS");
+             Serial.println(connected);
 			postponed_events_s.event_type |= VALUE_NOTIFICATION_EVENT;
 			//memcpy(postponed_events_s.user_request_event_payload, incoming_packet.payload, 3);
-
+			memcpy(postponed_events_s.event_handle_value_notification, incoming_packet->payload, incoming_packet->pkt_hdr.low_payload_size);
 			return 0;
+			Serial.print("MEMCPY DONE, CONN IS");
+            Serial.println(connected);
 		}
 
         dbg_print_P(PSTR("Attribute written event received\n"));
@@ -715,7 +745,7 @@ int event_handler(struct ble_pkt *incoming_packet, short postponed)
     }
     
     if ( IS_CONNECTION_STATUS(incoming_packet)){
-
+        connected = 1;
 		if (postponed){
 			postponed_events_s.event_type |= CONNECTION_EVENT;
 			//memcpy(postponed_events_s.user_request_event_payload, incoming_packet.payload, 3);
@@ -808,9 +838,9 @@ int event_handler()
 
 flag is_connection_established()
 {
-	if ( BG_UART.available() )
-		return RESOURCE_BUSY;
-
+//	if ( BG_UART.available() )
+//		return RESOURCE_BUSY;
+    
 	return (connected == 1);
 }
 
