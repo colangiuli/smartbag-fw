@@ -14,7 +14,8 @@
 
 
 
-#define LIGHT_DEBOUNCE_MS 60000
+#define LIGHT_DEBOUNCE_MS 30000
+#define RSSI_DEBOUNCE_MS 30000
 #define BATTERY_UPDATE_INTERVAL 60000
 
 int16_t lis_x;
@@ -26,6 +27,8 @@ int lightSensorPin = A0;
 int lightSensorValue = 0; 
 
 unsigned long light_debounce_start = 0;
+unsigned long RSSI_debounce_start = 0;
+
 unsigned long battery_update_start = 0;
 
 uint8_t move_enabled = FALSE;
@@ -117,10 +120,14 @@ void ble_task()
 
     //delay(1000);              // wait for a second
 
+
+
 	if ( is_connection_established() == 1 ) {
 //		get_connection_RSSI( &rssi );
 		
-		if( !is_in_proximity() ){
+		if (!is_in_proximity() && (millis() - RSSI_debounce_start > RSSI_DEBOUNCE_MS)) {
+    		RSSI_debounce_start = millis();	
+	//	if( !is_in_proximity() ){
 			if (write_att_request_by_handle_wo_offset(0x0017, 1, &not_in_proximity, WAIT_RESPONSE) != 0 )
 				dbg_print_P(PSTR("Error writing the attribute\n"));		
 		}

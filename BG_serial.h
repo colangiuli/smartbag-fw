@@ -26,6 +26,7 @@
 #define FREEZE_MODE_HANDLE 30
 #define BATTERY_LEVEL_HANDLE 33
 #define TX_POWER_LEVEL_HANDLE 37
+#define DATE_TIME_HANDLE 90 //to be updated with the real value...
 
 //debug service
 #define DEBUG_MSG_HANDLE 40
@@ -133,7 +134,7 @@ enum event_type_enum {CONNECTION_EVENT = 1, DISCONNECTION_EVENT = 2, USER_REQUES
 struct postponed_events{
 	uint8_t event_type;
 	char user_request_event_payload[3];
-	char event_handle_value_notification[6];
+	char event_handle_value_notification[9];
 	// event_handle_conn_status no datas
 	// event_handle_disconnection no datas
 

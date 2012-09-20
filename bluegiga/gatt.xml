@@ -48,7 +48,7 @@
             <properties read="true" indicate="true" />
             <!-- handle 15 = 0xF -->
             <!-- example 50g 15/11/83 19:00 is 501511831900 -->
-            <value length="6"/>        
+            <value length="7"/>        
         </characteristic>
     </service>
     

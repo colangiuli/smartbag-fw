@@ -671,6 +671,21 @@ int event_handle_value_notification(unsigned char *payload, uint8_t size)
         return 0;
     }
     
+    if ( written_handle == DATE_TIME_HANDLE ) {
+        //YMDHMS
+        uint8_t temp_date_time[7];
+        memcpy(&accel_thr_impact, (uint8_t *)&payload[7], 6);	
+        year = temp_date_time[0];
+        month = temp_date_time[1];
+        day = temp_date_time[2];
+        hour = temp_date_time[3];
+        minute = temp_date_time[4]; 
+        second = temp_date_time[5];
+        
+        SIM908_set_RTC_date();
+        return 0;
+    }
+    
     if ( written_handle == OPEN_THR_HANDLE ) {
         //light_thr = payload[6] + (payload[7] << 8);   
         memcpy(&light_thr, (uint8_t *)&payload[7], 2);
@@ -734,9 +749,12 @@ int event_handler(struct ble_pkt *incoming_packet, short postponed)
 			postponed_events_s.event_type |= VALUE_NOTIFICATION_EVENT;
 			//memcpy(postponed_events_s.user_request_event_payload, incoming_packet.payload, 3);
 			memcpy(postponed_events_s.event_handle_value_notification, incoming_packet->payload, incoming_packet->pkt_hdr.low_payload_size);
-			return 0;
 			Serial.print("MEMCPY DONE, CONN IS");
             Serial.println(connected);
+			Serial.print("With payload length:  ");
+            Serial.println(incoming_packet->pkt_hdr.low_payload_size);
+
+			return 0;
 		}
 
         dbg_print_P(PSTR("Attribute written event received\n"));
