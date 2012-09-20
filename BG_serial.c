@@ -682,7 +682,7 @@ int event_handle_value_notification(unsigned char *payload, uint8_t size)
         minute = temp_date_time[4]; 
         second = temp_date_time[5];
         
-        SIM908_set_RTC_date();
+        //SIM908_set_RTC_date();
         return 0;
     }
     

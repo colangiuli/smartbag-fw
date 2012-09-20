@@ -1149,15 +1149,21 @@ int SIM908_cloud_send_message(const char* message){
 	  SIM908_send_at_P(PSTR("\n\n\n"));
       mySerial.writeBytes((unsigned char *)end_c,  1);
 	  result_value = sim908_read_and_parse(SHORT_TOUT);
-	  if (result_value == FAILURE)
+	  if (result_value == FAILURE){
+          dbg_print_P(PSTR("FAIL1\n"));
           return FAILURE;
+      }
+      
 	  if (waiting_response == TRUE){
           delay(500);
-	      result_value = sim908_read_and_parse(SHORT_TOUT);
-    	  if (result_value == FAILURE)
+	      result_value = sim908_read_and_parse(10000);
+    	  if (result_value == FAILURE){
+    	      dbg_print_P(PSTR("FAIL2\n"));
               return FAILURE;
+          }
 	  }
 	  if (waiting_response == TRUE){
+          dbg_print_P(PSTR("FAIL3\n"));
           return FAILURE;
       }else{
           return SUCCESS;
@@ -1290,15 +1296,16 @@ int SIM908_send_cell_data_2_cloud()
             return FAILURE;
   	  if (waiting_response == TRUE){
             delay(500);
-  	      result_value = sim908_read_and_parse(SHORT_TOUT);
-      	  if (result_value == FAILURE)
+  	        result_value = sim908_read_and_parse(10000);
+      	    if (result_value == FAILURE)
                 return FAILURE;
   	  }
+  	  
   	  if (waiting_response == TRUE){
             return FAILURE;
-        }else{
+      }else{
             return SUCCESS;
-        }
+      }
 
 }
 
@@ -1333,6 +1340,7 @@ void SIM908_send_gprs_data()
                 result_value = SIM908_send_pos_2_cloud();
             else
                 result_value = SIM908_send_cell_data_2_cloud();
+                
 			if (result_value == SUCCESS)
 			    cbi(data_2_send,POSITION);
 		}//end if CHECKBIT
