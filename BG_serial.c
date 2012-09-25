@@ -20,6 +20,7 @@
 #include <avr/pgmspace.h>
 #include "utils.h"
 #include "eeprom_store.h"
+#include "SIM908.h"
 
 SC16IS7X0 BG_UART;
 
@@ -631,6 +632,7 @@ int event_handle_value_notification(unsigned char *payload, uint8_t size)
     Serial.print("P[3]: ");
     Serial.println(payload[3]);
         
+
     if ( written_handle == FREEZE_MODE_HANDLE ){
         move_enabled = payload[6];
         // Save to EEPROM
@@ -673,16 +675,26 @@ int event_handle_value_notification(unsigned char *payload, uint8_t size)
     
     if ( written_handle == DATE_TIME_HANDLE ) {
         //YMDHMS
-        uint8_t temp_date_time[7];
-        memcpy(&accel_thr_impact, (uint8_t *)&payload[7], 6);	
+
+		Serial.println("updating date/time");
+        uint8_t temp_date_time[6];
+
+        memcpy(temp_date_time, (uint8_t *)&payload[7], 6);	
+
         year = temp_date_time[0];
         month = temp_date_time[1];
         day = temp_date_time[2];
         hour = temp_date_time[3];
         minute = temp_date_time[4]; 
         second = temp_date_time[5];
-        
-        //SIM908_set_RTC_date();
+
+		//char sbirolo[50];
+        //sprintf(sbirolo, "DATE: %02d-%02d-%02d %02d:%02d:%02d", year, month, day, hour, minute, second);
+		//sprintf(sbirolo, "DATE: %02d-%02d-%02d %02d:%02d:%02d", payload[7], payload[8], payload[9], payload[10], payload[11], payload[12]);
+
+        //Serial.println(sbirolo);
+
+        SIM908_set_RTC_date();
         return 0;
     }
     

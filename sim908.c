@@ -252,8 +252,10 @@ void SIM908_task(void)
 		return;
     }
     
-    if (fix_status == FIX_VALID)
-        SIM908_set_RTC_date();    
+    if (fix_status == FIX_VALID){
+        SIM908_set_RTC_date();   
+		Serial.println("FIX appears to be valid, setting rtc");
+	} 
 	
 	//we need to update the gsm cell position?
 	if (task_2_execute == TASK_UPDATE_CELL_DATA)
@@ -822,11 +824,13 @@ void SIM908_GPS_get_position(char *gps_string)
 		return;
 	}
 
-	tmp = parsedecimal(p_start_char); 
-    hour = tmp / 10000;
-    minute = (tmp / 100) % 100;
-    second = tmp % 100;
+	//tmp = parsedecimal(p_start_char); 
+    //hour = tmp / 10000;
+    //minute = (tmp / 100) % 100;
+    //second = tmp % 100;
     
+	//dbg_print_P(PSTR("GPS is changing the date"));
+
 	//////////////////////////////////////////////////
 	// fix_status
 	//////////////////////////////////////////////////    

@@ -186,4 +186,13 @@
         </characteristic>
     </service>
     
+    <!-- time sync service -->
+    <service uuid="F601">
+       <!-- handle 62 -->
+      <characteristic uuid="F602">
+        <properties read="true" write="true" />
+        <!-- 1 byte year, 1 month, 1 day, 1 hour, 1 minutes, 1 secs-->
+         <value length="6" />
+      </characteristic>
+    </service>
 </configuration>

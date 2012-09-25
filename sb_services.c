@@ -92,7 +92,7 @@ void check_for_postponed_events()
 	if (  postponed_events_s.event_type & VALUE_NOTIFICATION_EVENT ){
 		memset(&fake_pkt, '\0', sizeof(fake_pkt));
 		FORGE_FAKE_EVENT(fake_pkt,BG_CLASS_ATTRIBUTE_DB ,BG_MESSAGE_ID_WRITE);
-		memcpy( fake_pkt.payload, postponed_events_s.event_handle_value_notification, 9);	
+		memcpy( fake_pkt.payload, postponed_events_s.event_handle_value_notification, 13);	
 		event_handler(&fake_pkt, HANDLE_NOW);
 		postponed_events_s.event_type &= ~(VALUE_NOTIFICATION_EVENT);
 	}
